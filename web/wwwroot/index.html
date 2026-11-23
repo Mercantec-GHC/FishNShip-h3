@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="FishNShip-værktøjet til Arduino-kode, kompilering og overvågning af Portenta via USB.">
   <title>FishNShip · Arduino-værktøj</title>
-  <link rel="stylesheet" href="/styles.css?v=monitor">
-  <script type="module" src="/firmware.js?v=hosted-compile"></script>
+  <link rel="stylesheet" href="/styles.css?v=adc">
+  <script type="module" src="/firmware.js?v=adc"></script>
 </head>
 <body>
   <header class="topbar">
@@ -114,15 +114,15 @@
       <div class="section-heading">
         <div>
           <h2 id="analog-heading">Analoge indgange</h2>
-          <p>Spændingsmåling i Portentas 0–10 V-tilstand</p>
+          <p>16-bit råværdier i Portentas 0–10 V-tilstand</p>
         </div>
       </div>
       <table>
-        <thead><tr><th scope="col">Kanal</th><th scope="col">Spænding</th></tr></thead>
+        <thead><tr><th scope="col">Kanal</th><th scope="col">Volt</th><th scope="col">ADC</th><th scope="col">Målestatus</th></tr></thead>
         <tbody id="analog-inputs">
-          <tr><th scope="row">AI0</th><td><span class="input-level">Ingen måling</span></td></tr>
-          <tr><th scope="row">AI1</th><td><span class="input-level">Ingen måling</span></td></tr>
-          <tr><th scope="row">AI2</th><td><span class="input-level">Ingen måling</span></td></tr>
+          <tr><th scope="row">AI0</th><td>–</td><td>–</td><td>Ingen måling</td></tr>
+          <tr><th scope="row">AI1</th><td>–</td><td>–</td><td>Ingen måling</td></tr>
+          <tr><th scope="row">AI2</th><td>–</td><td>–</td><td>Ingen måling</td></tr>
         </tbody>
       </table>
     </section>

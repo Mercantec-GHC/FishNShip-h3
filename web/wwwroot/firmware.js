@@ -1,4 +1,4 @@
-import { finishUpload, prepareUpload } from './app.js?v=analog';
+import { finishUpload, prepareUpload } from './app.js?v=adc';
 import { createArduinoEditor } from './vendor/arduino-editor.js';
 
 const editorHost = document.querySelector('#sketch');

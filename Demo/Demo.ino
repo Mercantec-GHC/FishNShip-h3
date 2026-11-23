@@ -50,12 +50,21 @@ void loop()
     }
     if (analogReady)
     {
+        uint16_t counts[3];
         for (int channel = 0; channel < 3; ++channel)
         {
+            counts[channel] = MachineControl_AnalogIn.read(channel);
             Serial.print("  AI");
             Serial.print(channel);
             Serial.print('=');
-            Serial.print(MachineControl_AnalogIn.read(channel) * voltsPerCount, 3);
+            Serial.print(counts[channel] * voltsPerCount, 3);
+        }
+        for (int channel = 0; channel < 3; ++channel)
+        {
+            Serial.print("  ADC");
+            Serial.print(channel);
+            Serial.print('=');
+            Serial.print(counts[channel]);
         }
     }
     Serial.println();

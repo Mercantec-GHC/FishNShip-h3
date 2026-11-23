@@ -8,7 +8,9 @@ const inputSource = document.querySelector('#input-source');
 const eventList = document.querySelector('#events');
 const emptyEvents = document.querySelector('#events-empty');
 const inputCount = document.querySelector('#input-count');
-const analogLevels = document.querySelectorAll('#analog-inputs .input-level');
+const analogRows = Array.from(document.querySelectorAll('#analog-inputs tr'), row => ({
+  voltage: row.cells[1], raw: row.cells[2], status: row.cells[3], previous: null,
+}));
 const voltageFormat = new Intl.NumberFormat('da-DK', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
 const lastChange = document.querySelector('#last-change');
 const serialLog = document.querySelector('#serial-log');
@@ -20,7 +22,7 @@ const inputRows = Array.from(document.querySelectorAll('#input-rows tr')).map(ro
 }));
 
 const timeFormat = new Intl.DateTimeFormat('da-DK', { timeStyle: 'medium' });
-const framePattern = /^DI0=([01])\s+DI1=([01])\s+DI2=([01])\s+DI3=([01])\s+DI4=([01])\s+DI5=([01])\s+DI6=([01])\s+DI7=([01])(?:\s+AI0=(\d+\.\d+)\s+AI1=(\d+\.\d+)\s+AI2=(\d+\.\d+))?$/;
+const framePattern = /^DI0=([01])\s+DI1=([01])\s+DI2=([01])\s+DI3=([01])\s+DI4=([01])\s+DI5=([01])\s+DI6=([01])\s+DI7=([01])(?:\s+AI0=(\d+\.\d+)\s+AI1=(\d+\.\d+)\s+AI2=(\d+\.\d+)(?:\s+ADC0=(\d{1,5})\s+ADC1=(\d{1,5})\s+ADC2=(\d{1,5}))?)?$/;
 let opening = false;
 let connection = null;
 let liveTimer;
@@ -72,10 +74,20 @@ async function refreshApprovedPorts() {
   updateControls();
 }
 
-function showInputs(levels, voltages = []) {
-  analogLevels.forEach((level, channel) => {
+function showInputs(levels, voltages = [], counts = []) {
+  analogRows.forEach((row, channel) => {
     const value = voltages[channel];
-    level.textContent = Number.isFinite(value) ? voltageFormat.format(value) + ' V' : 'Ingen måling';
+    const count = counts[channel];
+    const hasReading = Number.isFinite(value);
+    const hasRaw = Number.isInteger(count) && count >= 0 && count <= 65535;
+    const saturated = count === 65535 || (!hasRaw && hasReading && value >= 10.692);
+    const status = !hasReading ? 'Ingen måling' : saturated ? 'Mættet' : value > 10 ? 'Over 10 V' : 'Inden for 0–10 V';
+    row.voltage.textContent = hasReading && !saturated && value <= 10 ? voltageFormat.format(value) + ' V' : '–';
+    row.raw.textContent = hasRaw ? String(count) : '–';
+    if (row.status.textContent !== status) row.status.textContent = status;
+    row.status.classList.toggle('measurement-warning', saturated || value > 10);
+    if (hasReading && row.previous !== null && row.previous !== status) addEvent(`AI${channel}: ${status}`);
+    row.previous = hasReading ? status : null;
   });
   const changes = [];
   inputRows.forEach((channelRow, channel) => {
@@ -159,7 +171,7 @@ async function listenToArduino(link) {
       for (const line of lines) {
         const frame = framePattern.exec(line.trim());
         if (!frame) continue;
-        showInputs(frame.slice(1, 9).map(Number), frame.slice(9).map(Number));
+        showInputs(frame.slice(1, 9).map(Number), frame.slice(9, 12).map(Number), frame.slice(12, 15).map(Number));
         inputSource.textContent = 'Live fra Arduino via USB';
         setConnectionStatus('Arduino tilsluttet');
         waitForFrame();

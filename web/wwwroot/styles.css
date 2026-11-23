@@ -48,6 +48,7 @@ button:disabled { cursor: default; }
 .inputs .input-level { min-width: 7ch; white-space: nowrap; font-weight: 650; }
 .inputs tr[data-changed] { background: var(--change-wash); }
 .inputs tr[data-changed] th { box-shadow: inset 4px 0 var(--change); }
+.measurement-warning { color: var(--error); font-weight: 700; }
 .input-count { font-size: .875rem; font-weight: 650; white-space: nowrap; }
 .last-change { padding: 8px 20px; border-top: 1px solid var(--line); color: var(--change); font-size: .875rem; font-weight: 650; min-height: 38px; }
 .events { padding: 16px 20px; }
