@@ -38,7 +38,13 @@ Editoren leveres med appen. Hvis I ændrer dens CodeMirror-konfiguration, kør `
 
 ## Hosting på Dokploy
 
-Produktion bruger `compose.dokploy.yml` fra `main`. Dokploy sender trafik for `fishnship.mercantec.tech` til webservicen på containerport 3000. Den hostede side har kodeeditor, læser USB-signaler i browseren og kompilerer til Portenta H7 (M7) med Arduino CLI i Docker-containeren. Serveren håndterer én kompilering ad gangen. Gem i projektet og upload kører fra den lokale .NET-server.
+Produktion bruger `compose.dokploy.yml` fra `main`. Dokploy sender trafik for `fishnship.mercantec.tech` til webservicen på containerport 3000. Den hostede side har kodeeditor, læser USB-signaler i browseren og kompilerer til Portenta H7 (M7) med Arduino CLI i Docker-containeren. Serveren håndterer én kompilering ad gangen.
+
+### Upload fra den hostede side
+
+1. Start den opdaterede .NET-app på Arduino-computeren, og klik **Vis kode til online upload** på [localhost:5080](http://localhost:5080/#firmware).
+2. Åbn [FishNShip](https://fishnship.mercantec.tech/#firmware) i Chrome eller Edge på samme computer. Indsæt koden, klik **Forbind lokal upload**, og tillad lokal adgang, hvis browseren spørger.
+3. Kompilér på den hostede side, og klik **Upload til COM…**. Browseren sender koden direkte til værktøjet på localhost, som bygger og uploader via Arduino CLI. Uploadkoden gælder indtil den lokale server genstartes.
 
 ## Dokumentation
 

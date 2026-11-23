@@ -14,10 +14,17 @@ const refreshButton = document.querySelector('#refresh-ports');
 const portStatus = document.querySelector('#port-status');
 const firmwareStatus = document.querySelector('#firmware-status');
 const buildLog = document.querySelector('#build-log');
+const bridgeForm = document.querySelector('#bridge-form');
+const bridgeInput = document.querySelector('#hosted-bridge-key');
+const bridgeStatus = document.querySelector('#bridge-status');
+const pairButton = document.querySelector('#pair-bridge');
+const showBridgeKey = document.querySelector('#show-bridge-key');
+const localhost = 'http://localhost:5080';
 const buildLines = [];
 let editor;
 let enabled = false;
 let compileEnabled = false;
+let bridgeKey = '';
 let busy = false;
 let listing = false;
 let version;
@@ -31,19 +38,36 @@ function updateControls() {
   downloadButton.disabled = !editor || busy;
   saveButton.disabled = !editor || !enabled || busy || savedCode === editor.value;
   compileButton.disabled = !editor || !compileEnabled || busy || !editor.value.trim();
-  refreshButton.disabled = !enabled || busy || listing;
-  portSelect.disabled = !enabled || busy || listing || portSelect.options.length < 2;
-  uploadButton.disabled = !editor || !enabled || busy || listing || portSelect.options.length !== 2 || !portSelect.value || editor.value !== compiledCode;
+  const uploadAvailable = enabled || Boolean(bridgeKey);
+  refreshButton.disabled = !uploadAvailable || busy || listing;
+  portSelect.disabled = !uploadAvailable || busy || listing || portSelect.options.length < 2;
+  pairButton.disabled = busy || listing;
+  bridgeInput.disabled = busy || listing;
+  uploadButton.disabled = !editor || !uploadAvailable || busy || listing || portSelect.options.length !== 2 || !portSelect.value || editor.value !== compiledCode;
   uploadButton.textContent = portSelect.value ? `Upload til ${portSelect.value}` : 'Upload firmware';
 }
 
-async function api(action, data) {
-  const response = await fetch(`/api/firmware/${action}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Lager-Editor': '1' },
-    body: JSON.stringify(data ?? {}),
-  });
+async function api(action, data, viaBridge = !enabled && (action === 'ports' || action === 'upload')) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (viaBridge) headers['X-FishNShip-Key'] = bridgeKey;
+  else headers['X-Lager-Editor'] = '1';
+  let response;
+  try {
+    response = await fetch(viaBridge ? `${localhost}/api/usb/${action}` : `/api/firmware/${action}`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(data ?? {}),
+    });
+  } catch (error) {
+    if (!viaBridge) throw error;
+    throw new Error('Kunne ikke nå localhost:5080. Start det lokale værktøj, og tillad lokal adgang i browseren.');
+  }
   if (response.ok) return response;
+  if (viaBridge && response.status === 403) {
+    bridgeKey = '';
+    bridgeStatus.textContent = 'Uploadkoden er afvist. Hent en ny kode på localhost.';
+    throw new Error(bridgeStatus.textContent);
+  }
   const error = await response.json().catch(() => ({}));
   throw new Error(error.message || error.detail || `Siden kunne ikke fuldføre handlingen (${response.status}).`);
 }
@@ -60,11 +84,40 @@ async function refreshPorts() {
     if (ports.length === 1) portSelect.value = ports[0];
     else if (ports.includes(previous)) portSelect.value = previous;
     portStatus.textContent = ports.length === 1 ? 'Portenta er fundet.' : ports.length > 1 ? 'Lad kun den Portenta, I vil flashe, være tilsluttet.' : 'Ingen Portenta fundet. Tilslut USB, og klik Find port.';
+    return true;
   } catch (error) {
     portStatus.textContent = error.message;
+    return false;
   } finally {
     listing = false;
     updateControls();
+  }
+}
+
+async function pairBridge(event) {
+  event.preventDefault();
+  bridgeKey = bridgeInput.value.trim().toUpperCase();
+  bridgeStatus.textContent = 'Forbinder til det lokale værktøj…';
+  if (await refreshPorts()) {
+    bridgeStatus.textContent = 'Lokal upload er forbundet.';
+    bridgeInput.value = '';
+  } else {
+    bridgeKey = '';
+    bridgeStatus.textContent = portStatus.textContent;
+  }
+  updateControls();
+}
+
+async function revealBridgeKey() {
+  try {
+    const { key } = await (await api('bridge-key')).json();
+    const field = document.querySelector('#local-bridge-key');
+    field.value = key;
+    field.hidden = false;
+    field.focus();
+    field.select();
+  } catch (error) {
+    portStatus.textContent = error.message;
   }
 }
 
@@ -89,11 +142,13 @@ async function loadSketch() {
     enabled = sketch.enabled;
     compileEnabled = sketch.compileEnabled ?? enabled;
     sketchStatus.textContent = enabled ? 'Demo.ino er åben' : 'Lokal kladde';
+    document.querySelector('#local-bridge').hidden = !enabled;
+    document.querySelector('#hosted-bridge').hidden = enabled || location.protocol !== 'https:';
     if (enabled) void refreshPorts();
     else {
-      portStatus.textContent = 'Start siden med .NET på Arduino-computeren for at bruge uploadporten.';
+      portStatus.textContent = 'Forbind det lokale værktøj for at finde Arduinoens USB-port.';
       firmwareStatus.textContent = compileEnabled
-        ? 'Du kan kompilere her og hente kladden som .ino. Upload kører på localhost.'
+        ? 'Kompilér her, og forbind det lokale værktøj for at uploade.'
         : 'Du kan hente kladden som .ino. Kompilering og upload kører på localhost.';
     }
   } catch (error) {
@@ -176,6 +231,16 @@ async function runFirmware(action) {
   updateControls();
   try {
     if (uploading) await prepareUpload();
+    if (uploading && !enabled) {
+      firmwareStatus.textContent = 'Bygger firmware på Arduino-computeren…';
+      const localBuild = await readBuildStream(await api('compile', { code }, true));
+      if (!localBuild.success) {
+        editor.showDiagnostics(buildLines);
+        showingDiagnostics = true;
+        throw new Error(localBuild.message);
+      }
+      firmwareStatus.textContent = `Uploader til ${port}…`;
+    }
     const result = await readBuildStream(await api(action, { code, port }));
     if (!uploading) {
       if (result.success) compiledCode = code;
@@ -211,6 +276,8 @@ window.addEventListener('beforeunload', event => {
   if (editor && savedCode !== editor.value) event.preventDefault();
 });
 searchButton.addEventListener('click', () => editor.search());
+bridgeForm.addEventListener('submit', pairBridge);
+showBridgeKey.addEventListener('click', revealBridgeKey);
 downloadButton.addEventListener('click', downloadSketch);
 saveButton.addEventListener('click', saveSketch);
 refreshButton.addEventListener('click', refreshPorts);

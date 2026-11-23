@@ -73,6 +73,11 @@ button:disabled { cursor: default; }
 .firmware select { max-width: 100%; min-height: 44px; padding: 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); font: inherit; font-size: .875rem; }
 .subtle { color: var(--muted); font-size: .875rem; }
 .subtle[data-error] { color: var(--error); }
+.bridge-panel { width: 100%; padding-bottom: 12px; border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+.bridge-form { display: grid; gap: 8px; }
+.bridge-panel p { margin-top: 8px; }
+.bridge-panel input { min-height: 44px; max-width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); font-family: var(--mono); font-size: .875rem; }
+#local-bridge-key { width: 100%; margin-top: 8px; }
 #sketch, .console { width: 100%; min-width: 0; margin: 0; padding: 12px; border: 1px solid var(--machine-line); border-radius: 6px; background: var(--machine); color: var(--machine-ink); font: .875rem/1.5 var(--mono); overflow: auto; }
 #sketch { min-height: 250px; height: clamp(340px, 56vh, 560px); max-height: 78vh; resize: vertical; overflow: hidden; padding: 0; }
 #sketch:focus-within { outline: 2px solid var(--focus); outline-offset: 2px; }

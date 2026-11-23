@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="FishNShip-værktøjet til Arduino-kode, kompilering og overvågning af Portenta via USB.">
   <title>FishNShip · Arduino-værktøj</title>
-  <link rel="stylesheet" href="/styles.css?v=adc">
-  <script type="module" src="/firmware.js?v=adc"></script>
+  <link rel="stylesheet" href="/styles.css?v=usb-bridge">
+  <script type="module" src="/firmware.js?v=usb-bridge"></script>
 </head>
 <body>
   <header class="topbar">
@@ -18,6 +18,7 @@
           <a href="#firmware">Kode og upload</a>
           <a href="#serial">Serial Monitor</a>
           <a href="#signals">Signaler</a>
+          <a href="/three">3D-model</a>
         </nav>
       </div>
       <div class="connection">
@@ -57,6 +58,22 @@
           </div>
         </div>
         <div class="upload-panel">
+          <div id="local-bridge" class="bridge-panel" hidden>
+            <button type="button" id="show-bridge-key" class="button">Vis kode til online upload</button>
+            <input id="local-bridge-key" type="text" aria-label="Kode til online upload" readonly hidden>
+            <p class="subtle">Koden gælder indtil denne lokale server genstartes.</p>
+          </div>
+          <div id="hosted-bridge" class="bridge-panel" hidden>
+            <form id="bridge-form" class="bridge-form">
+              <label for="hosted-bridge-key" class="field-label">Lokal uploadkode</label>
+              <div class="firmware-actions">
+                <input id="hosted-bridge-key" type="password" autocomplete="off" spellcheck="false" required minlength="32" maxlength="32">
+                <button type="submit" id="pair-bridge" class="button">Forbind lokal upload</button>
+              </div>
+            </form>
+            <p class="subtle">Hent koden i <a href="http://localhost:5080/#firmware" target="_blank" rel="noopener">det lokale værktøj</a> på Arduino-computeren.</p>
+            <p id="bridge-status" class="subtle" role="status"></p>
+          </div>
           <label for="upload-port" class="field-label">Port til upload</label>
           <div class="firmware-actions">
             <select id="upload-port" aria-describedby="port-status" disabled><option value="">Vælg Portenta</option></select>

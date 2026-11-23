@@ -25,6 +25,7 @@ public sealed class FirmwareWorkspace(IWebHostEnvironment environment, IConfigur
     private string DraftFolder => Path.Combine(scratch, "Demo");
     private string BuildFolder => Path.Combine(scratch, "build");
     public bool AllowsHostedCompile => !enabled && allowHostedCompile;
+    public bool LocalToolsEnabled => enabled;
 
     public object ReadSketch()
     {
