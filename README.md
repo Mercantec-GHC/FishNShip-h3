@@ -48,5 +48,9 @@ Produktion bruger `compose.dokploy.yml` fra `main`. Dokploy sender trafik for `f
 
 ## Dokumentation
 
+På [3D-siden](https://fishnship.mercantec.tech/three) kan I dreje og zoome i højreollageret og følge en ind- og udlagring i demoen. Klik på et signal for at se dets signalspor. Under **USB live** kan I forbinde Portenta og se skitsens rå DI- og AI-kanaler. Der kræves kendskab til den lokale ledningsføring for at knytte de målinger til lagerets klemmer.
+
+Modellen og animationen ligger i `web/three`. Kør `npm ci --prefix web/three` og `npm run build --prefix web/three` efter ændringer. Three.js-bundlen leveres med siden, også i Docker.
+
 - [fischertechnik 536631, datablad og signalliste](https://fiproductmedia.azureedge.net/media/Certification%20Documents/Technical%20Datasheets/fischertechnik/TDB_536631-AUTOMATISIERTES_HOCHREGAL_24V.pdf)
 - [Arduino Portenta Machine Control, brugermanual](https://docs.arduino.cc/tutorials/portenta-machine-control/user-manual/)

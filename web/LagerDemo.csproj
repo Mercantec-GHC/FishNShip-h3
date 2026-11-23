@@ -3,6 +3,6 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <DefaultItemExcludes>$(DefaultItemExcludes);editor/**</DefaultItemExcludes>
+    <DefaultItemExcludes>$(DefaultItemExcludes);editor/**;three/**</DefaultItemExcludes>
   </PropertyGroup>
 </Project>
