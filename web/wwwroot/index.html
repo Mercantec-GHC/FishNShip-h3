@@ -6,7 +6,7 @@
   <meta name="description" content="FishNShip-værktøjet til Arduino-kode, kompilering og overvågning af Portenta via USB.">
   <title>FishNShip · Arduino-værktøj</title>
   <link rel="stylesheet" href="/styles.css?v=usb-bridge">
-  <script type="module" src="/firmware.js?v=usb-bridge"></script>
+  <script type="module" src="/firmware.js?v=upload-pair"></script>
 </head>
 <body>
   <header class="topbar">
@@ -64,14 +64,17 @@
             <p class="subtle">Koden gælder indtil denne lokale server genstartes.</p>
           </div>
           <div id="hosted-bridge" class="bridge-panel" hidden>
-            <form id="bridge-form" class="bridge-form">
-              <label for="hosted-bridge-key" class="field-label">Lokal uploadkode</label>
-              <div class="firmware-actions">
-                <input id="hosted-bridge-key" type="password" autocomplete="off" spellcheck="false" required minlength="32" maxlength="32">
-                <button type="submit" id="pair-bridge" class="button">Forbind lokal upload</button>
-              </div>
-            </form>
-            <p class="subtle">Hent koden i <a href="http://localhost:5080/#firmware" target="_blank" rel="noopener">det lokale værktøj</a> på Arduino-computeren.</p>
+            <details>
+              <summary>Forbind med uploadkode</summary>
+              <form id="bridge-form" class="bridge-form">
+                <label for="hosted-bridge-key" class="field-label">Lokal uploadkode</label>
+                <div class="firmware-actions">
+                  <input id="hosted-bridge-key" type="password" autocomplete="off" spellcheck="false" required minlength="32" maxlength="32">
+                  <button type="submit" id="pair-bridge" class="button">Forbind lokal upload</button>
+                </div>
+              </form>
+              <p class="subtle">Hent koden i <a href="http://localhost:5080/#firmware" target="_blank" rel="noopener">det lokale værktøj</a> på Arduino-computeren.</p>
+            </details>
             <p id="bridge-status" class="subtle" role="status"></p>
           </div>
           <label for="upload-port" class="field-label">Port til upload</label>

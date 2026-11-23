@@ -42,9 +42,9 @@ Produktion bruger `compose.dokploy.yml` fra `main`. Dokploy sender trafik for `f
 
 ### Upload fra den hostede side
 
-1. Start den opdaterede .NET-app på Arduino-computeren, og klik **Vis kode til online upload** på [localhost:5080](http://localhost:5080/#firmware).
-2. Åbn [FishNShip](https://fishnship.mercantec.tech/#firmware) i Chrome eller Edge på samme computer. Indsæt koden, klik **Forbind lokal upload**, og tillad lokal adgang, hvis browseren spørger.
-3. Kompilér på den hostede side, og klik **Upload til COM…**. Browseren sender koden direkte til værktøjet på localhost, som bygger og uploader via Arduino CLI. Uploadkoden gælder indtil den lokale server genstartes.
+1. Start den opdaterede .NET-app på Arduino-computeren.
+2. Åbn [FishNShip](https://fishnship.mercantec.tech/#firmware) i Chrome eller Edge på samme computer. Klik **Find port**, og godkend forbindelsen i det lokale vindue. Hvis pop op-vinduet er blokeret, kan I bruge **Forbind med uploadkode** og hente koden på [localhost:5080](http://localhost:5080/#firmware).
+3. Klik **Byg og upload til COM…**. Tillad lokal adgang, hvis browseren spørger. Browseren sender koden direkte til værktøjet på localhost, som bygger og uploader via Arduino CLI. Forbindelsen gemmes i fanen, og uploadkoden gælder indtil den lokale server genstartes.
 
 ## Dokumentation
 

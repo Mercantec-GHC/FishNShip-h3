@@ -20,6 +20,8 @@ const bridgeStatus = document.querySelector('#bridge-status');
 const pairButton = document.querySelector('#pair-bridge');
 const showBridgeKey = document.querySelector('#show-bridge-key');
 const localhost = 'http://localhost:5080';
+const hosted = location.origin === 'https://fishnship.mercantec.tech';
+const bridgeStorageKey = 'fishnship-upload-key';
 const buildLines = [];
 let editor;
 let enabled = false;
@@ -31,6 +33,19 @@ let version;
 let savedCode;
 let compiledCode;
 let showingDiagnostics = false;
+let pairWindow;
+let pairRequestId;
+
+function rememberBridge(key) {
+  bridgeKey = key;
+  if (!hosted) return;
+  try {
+    if (key) sessionStorage.setItem(bridgeStorageKey, key);
+    else sessionStorage.removeItem(bridgeStorageKey);
+  } catch {
+    // The bridge still works for the current page when session storage is blocked.
+  }
+}
 
 function updateControls() {
   editor?.setReadOnly(busy);
@@ -39,12 +54,14 @@ function updateControls() {
   saveButton.disabled = !editor || !enabled || busy || savedCode === editor.value;
   compileButton.disabled = !editor || !compileEnabled || busy || !editor.value.trim();
   const uploadAvailable = enabled || Boolean(bridgeKey);
-  refreshButton.disabled = !uploadAvailable || busy || listing;
+  refreshButton.disabled = !editor || (!uploadAvailable && !hosted) || busy || listing;
   portSelect.disabled = !uploadAvailable || busy || listing || portSelect.options.length < 2;
   pairButton.disabled = busy || listing;
   bridgeInput.disabled = busy || listing;
-  uploadButton.disabled = !editor || !uploadAvailable || busy || listing || portSelect.options.length !== 2 || !portSelect.value || editor.value !== compiledCode;
-  uploadButton.textContent = portSelect.value ? `Upload til ${portSelect.value}` : 'Upload firmware';
+  const readyCode = editor && (enabled ? editor.value === compiledCode : editor.value.trim());
+  uploadButton.disabled = !readyCode || !uploadAvailable || busy || listing || portSelect.options.length !== 2 || !portSelect.value;
+  const action = enabled ? 'Upload' : 'Byg og upload';
+  uploadButton.textContent = portSelect.value ? `${action} til ${portSelect.value}` : 'Upload firmware';
 }
 
 async function api(action, data, viaBridge = !enabled && (action === 'ports' || action === 'upload')) {
@@ -64,7 +81,7 @@ async function api(action, data, viaBridge = !enabled && (action === 'ports' || 
   }
   if (response.ok) return response;
   if (viaBridge && response.status === 403) {
-    bridgeKey = '';
+    rememberBridge('');
     bridgeStatus.textContent = 'Uploadkoden er afvist. Hent en ny kode på localhost.';
     throw new Error(bridgeStatus.textContent);
   }
@@ -72,20 +89,25 @@ async function api(action, data, viaBridge = !enabled && (action === 'ports' || 
   throw new Error(error.message || error.detail || `Siden kunne ikke fuldføre handlingen (${response.status}).`);
 }
 
+function showPorts(ports) {
+  const previous = portSelect.value;
+  portSelect.replaceChildren(new Option('Vælg Portenta', ''));
+  for (const port of ports) portSelect.add(new Option(`Portenta H7 · ${port}`, port));
+  if (ports.length === 1) portSelect.value = ports[0];
+  else if (ports.includes(previous)) portSelect.value = previous;
+  portStatus.textContent = ports.length === 1 ? `Portenta er valgt på ${ports[0]}.` : ports.length > 1 ? 'Lad kun den Portenta, I vil flashe, være tilsluttet.' : 'Ingen Portenta fundet. Tilslut USB, og klik Find port.';
+}
+
 async function refreshPorts() {
   listing = true;
   updateControls();
   portStatus.textContent = 'Leder efter Portenta via USB…';
-  const previous = portSelect.value;
-  portSelect.replaceChildren(new Option('Vælg Portenta', ''));
   try {
     const ports = await (await api('ports')).json();
-    for (const port of ports) portSelect.add(new Option(`Portenta H7 · ${port}`, port));
-    if (ports.length === 1) portSelect.value = ports[0];
-    else if (ports.includes(previous)) portSelect.value = previous;
-    portStatus.textContent = ports.length === 1 ? 'Portenta er fundet.' : ports.length > 1 ? 'Lad kun den Portenta, I vil flashe, være tilsluttet.' : 'Ingen Portenta fundet. Tilslut USB, og klik Find port.';
+    showPorts(ports);
     return true;
   } catch (error) {
+    showPorts([]);
     portStatus.textContent = error.message;
     return false;
   } finally {
@@ -94,19 +116,46 @@ async function refreshPorts() {
   }
 }
 
-async function pairBridge(event) {
-  event.preventDefault();
-  bridgeKey = bridgeInput.value.trim().toUpperCase();
+async function connectBridge(key) {
+  bridgeKey = key;
   bridgeStatus.textContent = 'Forbinder til det lokale værktøj…';
   if (await refreshPorts()) {
+    rememberBridge(key);
     bridgeStatus.textContent = 'Lokal upload er forbundet.';
     bridgeInput.value = '';
   } else {
-    bridgeKey = '';
+    rememberBridge('');
     bridgeStatus.textContent = portStatus.textContent;
   }
   updateControls();
 }
+
+function findPorts() {
+  if (enabled || bridgeKey) {
+    void refreshPorts();
+    return;
+  }
+
+  pairRequestId = crypto.randomUUID();
+  pairWindow = window.open(`${localhost}/upload-pair.html#${pairRequestId}`, 'fishnship-local-upload', 'popup,width=620,height=440');
+  portStatus.textContent = pairWindow
+    ? 'Godkend forbindelsen i det lokale vindue.'
+    : 'Tillad pop op-vinduer, eller vælg Forbind med uploadkode.';
+}
+
+window.addEventListener('message', event => {
+  if (event.origin !== localhost || !pairWindow || event.source !== pairWindow ||
+      event.data?.type !== 'fishnship-upload-approved' || event.data.requestId !== pairRequestId ||
+      typeof event.data.key !== 'string' || !/^[A-F0-9]{32}$/.test(event.data.key) ||
+      !Array.isArray(event.data.ports) || !event.data.ports.every(port => typeof port === 'string')) return;
+
+  pairWindow = undefined;
+  pairRequestId = undefined;
+  rememberBridge(event.data.key);
+  showPorts(event.data.ports);
+  bridgeStatus.textContent = 'Lokal upload er forbundet.';
+  updateControls();
+});
 
 async function revealBridgeKey() {
   try {
@@ -144,11 +193,15 @@ async function loadSketch() {
     sketchStatus.textContent = enabled ? 'Demo.ino er åben' : 'Lokal kladde';
     document.querySelector('#local-bridge').hidden = !enabled;
     document.querySelector('#hosted-bridge').hidden = enabled || location.protocol !== 'https:';
+    if (hosted) {
+      try { bridgeKey = sessionStorage.getItem(bridgeStorageKey) ?? ''; }
+      catch { bridgeKey = ''; }
+    }
     if (enabled) void refreshPorts();
     else {
-      portStatus.textContent = 'Forbind det lokale værktøj for at finde Arduinoens USB-port.';
+      portStatus.textContent = 'Klik Find port for at finde Portenta på denne computer.';
       firmwareStatus.textContent = compileEnabled
-        ? 'Kompilér her, og forbind det lokale værktøj for at uploade.'
+        ? 'Når porten er valgt, kan du bygge og uploade i samme trin.'
         : 'Du kan hente kladden som .ino. Kompilering og upload kører på localhost.';
     }
   } catch (error) {
@@ -266,7 +319,7 @@ function editorChanged() {
     showingDiagnostics = false;
     queueMicrotask(() => editor.showDiagnostics([]));
   }
-  if (compiledCode) {
+  if (enabled && compiledCode) {
     firmwareStatus.textContent = editor.value === compiledCode ? 'Kompileret og klar til upload.' : 'Kompilér ændringerne før upload.';
     firmwareStatus.removeAttribute('data-error');
   }
@@ -276,11 +329,14 @@ window.addEventListener('beforeunload', event => {
   if (editor && savedCode !== editor.value) event.preventDefault();
 });
 searchButton.addEventListener('click', () => editor.search());
-bridgeForm.addEventListener('submit', pairBridge);
+bridgeForm.addEventListener('submit', event => {
+  event.preventDefault();
+  void connectBridge(bridgeInput.value.trim().toUpperCase());
+});
 showBridgeKey.addEventListener('click', revealBridgeKey);
 downloadButton.addEventListener('click', downloadSketch);
 saveButton.addEventListener('click', saveSketch);
-refreshButton.addEventListener('click', refreshPorts);
+refreshButton.addEventListener('click', findPorts);
 portSelect.addEventListener('change', updateControls);
 compileButton.addEventListener('click', () => runFirmware('compile'));
 uploadButton.addEventListener('click', () => runFirmware('upload'));
