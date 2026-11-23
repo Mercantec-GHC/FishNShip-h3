@@ -191,6 +191,8 @@ export function mountInspection({ warehouse, canvas, camera, invalidate, focusPa
       const text = (code ? code + ' · ' : '') + item.part.name;
       if (item.caption.textContent !== text) item.caption.textContent = text;
       item.button.title = (currents ? 'Høj (1) · ' : '') + text;
+      item.button.setAttribute('aria-label', item.button.title);
+      item.button.dataset.code = code || '';
       currentLabels.push(item);
     }
     invalidate();
@@ -274,6 +276,7 @@ export function mountInspection({ warehouse, canvas, camera, invalidate, focusPa
   function projectLabels() {
     if (!currentLabels.length) return;
     const w = stage.clientWidth, h = stage.clientHeight;
+    q('annotations').toggleAttribute('data-compact', w < 500 && currentLabels.length >= 4);
     const placed = [];
     const tools = stage.querySelector('.stage-tools'), footer = stage.querySelector('.stage-bottom');
     const topLimit = tools.offsetTop + tools.offsetHeight + 5;
@@ -292,6 +295,7 @@ export function mountInspection({ warehouse, canvas, camera, invalidate, focusPa
       const width = button.offsetWidth, height = button.offsetHeight;
       const columns = [x + 13, x - width - 13].map(raw => THREE.MathUtils.clamp(raw, 3, w - width - 3));
       if (x + width + 16 > w) columns.reverse();
+      columns.push(3, w - width - 3);
       const preferredY = THREE.MathUtils.clamp(y - height - 10, topLimit, bottomLimit - height);
       let left = columns[0], top = preferredY, found = false;
       // Try both sides of the pointer, then neighbouring rows. Reserve the toolbars

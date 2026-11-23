@@ -87,6 +87,8 @@ h1 span { color: #697a87; font-weight: 420; }
   font: 620 11px/1.15 var(--font); box-shadow: 0 1px 4px #15223821; pointer-events: auto; cursor: pointer;
 }
 #annotations .part-tag span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#annotations[data-compact] .part-tag:not([data-code=""]) span { display: none; }
+#annotations[data-compact] .part-tag:not([data-code=""])::after { content: attr(data-code); font: 600 11px var(--mono); }
 #annotations .part-tag[data-state="selected"] { background: #e8f2ff; border-color: #4474a7; color: #163f6f; }
 #annotations .part-tag[data-state="active"] { background: #ddf7e9; border-color: #308366; color: #07543a; }
 #annotations .part-tag:is([data-selected="true"], [data-selected=""]) { box-shadow: 0 0 0 1px #24568c, 0 2px 5px #15223826; }
