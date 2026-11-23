@@ -1,0 +1,9 @@
+services:
+  web:
+    build: .
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_URLS: http://+:3000
+      Arduino__Enabled: "false"
+    expose:
+      - "3000"

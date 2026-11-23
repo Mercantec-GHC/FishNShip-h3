@@ -32,6 +32,10 @@ Den lokale .NET-server bruger `arduino-cli` til at kompilere og bruge Portentas 
 
 Docker-varianten viser simulering og USB-signaler gennem browseren. Kør .NET direkte på værtscomputeren for at gemme, kompilere og uploade.
 
+## Hosting på Dokploy
+
+Produktion bruger `compose.dokploy.yml` fra `main`. Dokploy sender trafik for `fishnship.mercantec.tech` til webservicen på containerport 3000. Den hostede side viser lagerdemoen og læser USB-signaler i brugerens browser. Kompilering og upload kører fra den lokale .NET-server.
+
 ## Dokumentation
 
 - [fischertechnik 536631, datablad og signalliste](https://fiproductmedia.azureedge.net/media/Certification%20Documents/Technical%20Datasheets/fischertechnik/TDB_536631-AUTOMATISIERTES_HOCHREGAL_24V.pdf)
