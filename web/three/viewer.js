@@ -9,24 +9,28 @@ let elapsed = 0;
 let previous = null;
 let nextReadout = 0;
 let poseChanged = true;
-const panel = mountSignalPanel({
-  onSourceChange(next) {
-    source = next;
-    previous = null;
-    nextReadout = 0;
-    poseChanged = true;
-  },
-});
-
-let scene;
+let scene, panel;
 try {
-  scene = createScene();
+  scene = createScene({
+    selectSignal: id => panel.selectModelSignal(id),
+    editWiring: id => panel.editWiring(id),
+  });
   $('#render-message').hidden = true;
 } catch (error) {
   console.error('3D-modellen kunne ikke åbnes', error);
   $('#render-message').textContent = '3D-modellen kræver WebGL 2. Slå hardwareacceleration til i browseren, og genindlæs siden.';
   for (const element of document.querySelectorAll('.stage-tools button, .stage-tools select, .zoom-tools button')) element.disabled = true;
 }
+panel = mountSignalPanel({
+  onSourceChange(next) {
+    source = next;
+    previous = null;
+    nextReadout = 0;
+    poseChanged = true;
+  },
+  onSelectSignal: selection => scene?.showSignal(selection),
+  onDigitalState: state => scene?.setDigitalState(state),
+});
 const play = $('#play'), seek = $('#seek'), clock = $('#clock'), operation = $('#operation');
 function updateButton() {
   play.querySelector('use').setAttribute('href', playing ? '#i-pause' : '#i-play');

@@ -9,9 +9,29 @@ const portentaGroups = {
   inputs: Array.from({ length: 8 }, (_, index) => ({ id: `DI${index}`, index, label: 'Digital indgang' })),
   outputs: Array.from({ length: 3 }, (_, index) => ({ id: `AI${index}`, index, label: 'Analog indgang', analog: true })),
 };
+const pdfInputs = new Map(demoGroups.inputs.map(channel => [channel.id, channel]));
+const wiringKey = 'fishnship.536631.wiring.v1.';
 const voltage = new Intl.NumberFormat('da-DK', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
 const windowSeconds = 5;
 const windowWidth = 280;
+
+function readWiring() {
+  const mapping = {};
+  for (const { id } of portentaGroups.inputs) {
+    let stored = null;
+    try { stored = localStorage.getItem(wiringKey + id); } catch { /* Storage may be disabled. */ }
+    mapping[id] = pdfInputs.has(stored) ? stored : null;
+  }
+  return Object.freeze(mapping);
+}
+
+// Reveal a model-selected row inside the monitor without moving the page or camera.
+function revealIn(container, element) {
+  const parent = container.getBoundingClientRect();
+  const child = element.getBoundingClientRect();
+  if (child.top < parent.top) container.scrollTop += child.top - parent.top;
+  else if (child.bottom > parent.bottom) container.scrollTop += child.bottom - parent.bottom;
+}
 
 function setText(element, value) {
   if (element.textContent !== value) element.textContent = value;
@@ -70,7 +90,7 @@ function usbTrace(history, channel, now) {
   return path;
 }
 
-export function mountSignalPanel({ onSourceChange } = {}) {
+export function mountSignalPanel({ onSourceChange, onSelectSignal, onDigitalState } = {}) {
   const find = id => document.getElementById(id);
   const sources = [...document.querySelectorAll('[data-source]')];
   const tabs = [...document.querySelectorAll('[data-tab]')];
@@ -84,6 +104,11 @@ export function mountSignalPanel({ onSourceChange } = {}) {
   const connect = find('connect');
   const reconnect = find('reconnect');
   const disconnect = find('disconnect');
+  const wiringTools = find('wiring-tools');
+  const toggleWiring = find('toggle-wiring');
+  const wiringEditor = find('wiring-editor');
+  const wiringStatus = find('wiring-status');
+  const wiringSelects = new Map();
   const monitor = createSignalMonitor();
   const selected = { demo: { inputs: 'I1', outputs: 'Q1' }, usb: { inputs: 'DI0', outputs: 'AI0' } };
   const activeTab = { demo: 'inputs', usb: 'inputs' };
@@ -96,6 +121,78 @@ export function mountSignalPanel({ onSourceChange } = {}) {
   let demo = sampleSimulation(0);
   let playing = true;
   let lastPlotTime = null;
+  let mapping = readWiring();
+  let emittedKey = '';
+  let emittedMapping;
+
+  function emitLevels() {
+    if (!onDigitalState) return;
+    const levels = {};
+    if (source === 'demo') {
+      for (const { id } of signals) levels[id] = Number(demo.signals[id]);
+    } else {
+      for (const { id, index } of portentaGroups.inputs) levels[id] = usb.frame?.digital[index] ?? null;
+    }
+    const key = source + Object.values(levels).map(value => value ?? '-').join('');
+    if (key === emittedKey && mapping === emittedMapping) return;
+    emittedKey = key;
+    emittedMapping = mapping;
+    onDigitalState({ source, levels, mapping });
+  }
+
+  function emitSelection(intent) {
+    const id = selected[source][activeTab[source]];
+    onSelectSignal?.({ source, id, mappedSignal: source === 'demo' ? id : mapping[id] ?? null, intent });
+  }
+
+  function openWiring(open) {
+    wiringEditor.hidden = !open;
+    toggleWiring.setAttribute('aria-expanded', String(open));
+    setText(toggleWiring, open ? 'Luk tilknytning' : 'Tilknyt indgange');
+  }
+
+  function applyWiring(next, announce = '') {
+    mapping = Object.freeze(next);
+    for (const [id, select] of wiringSelects) select.value = mapping[id] ?? '';
+    setText(wiringStatus, announce);
+    if (source !== 'usb') return;
+    renderRows();
+    emitLevels();
+    emitSelection('sync');
+  }
+
+  for (const { id } of portentaGroups.inputs) {
+    const label = document.createElement('label');
+    label.className = 'wiring-field';
+    const name = document.createElement('span');
+    name.textContent = id;
+    const select = document.createElement('select');
+    select.id = 'wiring-' + id;
+    select.setAttribute('aria-label', `Klemme til ${id}`);
+    select.add(new Option('Ikke tilknyttet', ''));
+    for (const input of pdfInputs.values()) {
+      select.add(new Option(`${input.id} · ${input.label} · kl. ${input.terminal}`, input.id));
+    }
+    select.value = mapping[id] ?? '';
+    select.addEventListener('change', () => {
+      const next = select.value || null;
+      let message = next ? `${id} er knyttet til ${next}.` : `Tilknytningen for ${id} er fjernet.`;
+      try {
+        if (next) localStorage.setItem(wiringKey + id, next);
+        else localStorage.removeItem(wiringKey + id);
+      } catch {
+        message += ' Browseren kunne kun gemme ændringen for denne visning.';
+      }
+      applyWiring({ ...mapping, [id]: next }, message);
+    });
+    label.append(name, select);
+    find('wiring-fields').append(label);
+    wiringSelects.set(id, select);
+  }
+  toggleWiring.addEventListener('click', () => openWiring(wiringEditor.hidden));
+  window.addEventListener('storage', event => {
+    if (event.key === null || event.key.startsWith(wiringKey)) applyWiring(readWiring());
+  });
 
   function renderTrace() {
     const id = selected[source][activeTab[source]];
@@ -120,6 +217,11 @@ export function mountSignalPanel({ onSourceChange } = {}) {
       let label = channel.label;
       let display = value === null ? '—' : String(value);
       let missing = value === null;
+      if (live && !channel.analog) {
+        const linked = pdfInputs.get(mapping[channel.id]);
+        label = linked ? `${linked.id} · ${linked.label}` : 'Ikke tilknyttet';
+        button.title = linked ? `${linked.id} · Klemme ${linked.terminal}` : 'Portenta-indgang uden tilknyttet klemme';
+      }
       if (channel.analog) {
         const volts = usb.frame?.analog[channel.index];
         const raw = usb.frame?.adc[channel.index];
@@ -137,21 +239,25 @@ export function mountSignalPanel({ onSourceChange } = {}) {
     }
   }
 
-  function chooseChannel(id) {
+  function chooseChannel(id, intent) {
     selected[source][activeTab[source]] = id;
     for (const row of rows.values()) row.button.setAttribute('aria-pressed', String(row.channel.id === id));
     renderTrace();
+    if (intent) emitSelection(intent);
   }
 
-  function rebuildRows() {
+  function rebuildRows(intent = 'sync') {
     const group = activeTab[source];
     const channels = (source === 'demo' ? demoGroups : portentaGroups)[group];
+    wiringTools.hidden = source !== 'usb' || group !== 'inputs';
+    if (wiringTools.hidden) openWiring(false);
     rows.clear();
     const fragment = document.createDocumentFragment();
     for (const channel of channels) {
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'channel-row';
+      button.dataset.channel = channel.id;
       const code = document.createElement('span');
       code.className = 'channel-code';
       code.textContent = channel.id;
@@ -167,7 +273,7 @@ export function mountSignalPanel({ onSourceChange } = {}) {
       value.append(led, reading);
       button.append(code, name, value);
       if (channel.terminal) button.title = `Klemme ${channel.terminal}${channel.motor ? ' · ' + channel.motor : ''}`;
-      button.addEventListener('click', () => chooseChannel(channel.id));
+      button.addEventListener('click', () => chooseChannel(channel.id, 'user'));
       fragment.append(button);
       rows.set(channel.id, { button, name, reading, channel });
     }
@@ -179,7 +285,25 @@ export function mountSignalPanel({ onSourceChange } = {}) {
       tab.setAttribute('aria-pressed', String(tab.dataset.tab === group));
     }
     renderRows();
-    chooseChannel(selected[source][group]);
+    chooseChannel(selected[source][group], intent);
+  }
+
+  function selectModelSignal(id) {
+    let channelId = id;
+    if (source === 'usb' && pdfInputs.has(id)) {
+      const current = selected.usb.inputs;
+      channelId = mapping[current] === id ? current : portentaGroups.inputs.find(channel => mapping[channel.id] === id)?.id;
+    }
+    const groups = source === 'demo' ? demoGroups : portentaGroups;
+    const group = Object.keys(groups).find(key => groups[key].some(channel => channel.id === channelId));
+    if (!group) return false;
+    if (activeTab[source] !== group) {
+      activeTab[source] = group;
+      selected[source][group] = channelId;
+      rebuildRows('model');
+    } else chooseChannel(channelId, 'model');
+    revealIn(list, rows.get(channelId).button);
+    return true;
   }
 
   function renderStatus() {
@@ -207,9 +331,11 @@ export function mountSignalPanel({ onSourceChange } = {}) {
     clearInterval(chartTimer);
     if (live) chartTimer = setInterval(renderTrace, 125);
     else void monitor.disconnect().catch(() => {});
-    rebuildRows();
+    rebuildRows(null);
     renderStatus();
     onSourceChange?.(source);
+    emitLevels();
+    emitSelection('sync');
   }
 
   for (const button of sources) button.addEventListener('click', () => changeSource(button.dataset.source));
@@ -233,10 +359,23 @@ export function mountSignalPanel({ onSourceChange } = {}) {
     renderStatus();
     renderRows();
     renderTrace();
+    emitLevels();
   });
   renderStatus();
+  emitLevels();
 
   return {
+    selectModelSignal,
+    editWiring(id) {
+      const select = wiringSelects.get(id);
+      if (!select) return false;
+      if (source !== 'usb') changeSource('usb');
+      selectModelSignal(id);
+      openWiring(true);
+      select.focus({ preventScroll: true });
+      revealIn(wiringEditor, select);
+      return true;
+    },
     updateDemo(sample, isPlaying) {
       demo = sample;
       const playbackChanged = playing !== isPlaying;
@@ -244,6 +383,7 @@ export function mountSignalPanel({ onSourceChange } = {}) {
       if (source !== 'demo') return;
       if (playbackChanged) renderStatus();
       renderRows();
+      emitLevels();
       if (lastPlotTime === null || Math.abs(demo.elapsed - lastPlotTime) >= 0.065 || playbackChanged ||
         (!playing && demo.elapsed !== lastPlotTime)) renderTrace();
     },

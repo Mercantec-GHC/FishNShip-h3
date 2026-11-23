@@ -90,7 +90,8 @@ function parts(parent) {
       }
       if (!solids.length) continue;
       const mesh = new THREE.Mesh(mergeGeometries(solids), material);
-      mesh.castShadow = mesh.receiveShadow = true;
+      mesh.castShadow = !material.transparent;
+      mesh.receiveShadow = true;
       parent.add(mesh);
       solids.forEach(geometry => geometry.dispose());
     }
@@ -257,7 +258,7 @@ function carrier(p, m, x, y, z, color) {
   for (const dz of stripes) p.box(m.dark, x - 0.251, y + 0.106, z + dz, 0.004, 0.115, 0.070);
 }
 
-function axisDrive(p, m) {
+function driveRails(p, m) {
   for (const z of [0.69, 1.25]) {
     p.box(m.mould, 0.04, 0.239, z, 4.96, 0.101, 0.126);
     p.rod(m.aluminium, 0.03, 0.336, z, 0.031, 4.80, 'x');
@@ -267,6 +268,10 @@ function axisDrive(p, m) {
     p.box(m.red, x, 0.372, 0.970, 0.135, 0.24, 0.28, 0.010);
     p.rod(m.mould, x, 0.425, 0.97, 0.083, 0.155, 'x');
   }
+  p.rod(m.steel, 0.285, 0.425, 0.970, 0.031, 4.32, 'x');
+}
+
+function horizontalMotor(p, m) {
   p.box(m.mould, -2.130, 0.366, 0.98, 0.35, 0.34, 0.33, 0.018);
   p.box(m.red, -2.136, 0.488, 0.94, 0.50, 0.29, 0.32, 0.022);
   for (let i = 0; i < 5; i++) {
@@ -278,9 +283,15 @@ function axisDrive(p, m) {
     p.box(m.redDark, -2.14, 0.49, z, 0.39, 0.025, 0.022);
   }
   p.box(m.terminal, -2.39, 0.40, 0.94, 0.024, 0.105, 0.133);
-  p.rod(m.steel, 0.285, 0.425, 0.970, 0.031, 4.32, 'x');
-  p.box(m.mould, 2.39, 0.435, 1.2, 0.105, 0.08, 0.21);
-  p.box(m.redLight, 2.381, 0.481, 1.21, 0.057, 0.027, 0.07);
+}
+
+function limitSwitch(p, m, x, y, z) {
+  p.box(m.dark, x, y, z, 0.13, 0.083, 0.16, 0.009);
+  p.box(m.redLight, x, y + 0.049, z - 0.018, 0.065, 0.027, 0.06, 0.004);
+  p.box(m.terminal, x, y - 0.005, z + 0.087, 0.088, 0.045, 0.024);
+  for (const dx of [-0.027, 0.027]) {
+    p.rod(m.zinc, x + dx, y - 0.005, z + 0.104, 0.012, 0.015, 'z');
+  }
 }
 
 function opticalGate(p, m, z) {
@@ -316,14 +327,18 @@ function conveyor(p, m) {
     p.rod(m.rubber, transferX, beltDeck - 0.076, z, 0.075, z < -1 ? 0.414 : 0.093, 'x');
     p.rod(m.steel, transferX, beltDeck - 0.076, z, 0.028, 0.74, 'x');
   }
+  p.box(m.red, transferX - 0.33, beltDeck + 0.02, -0.87, 0.1, 0.21, 0.19);
+}
+
+function beltMotor(p, m) {
   p.box(m.mould, transferX - 0.435, beltDeck - 0.269, -1.34, 0.269, 0.229, 0.309, 0.015);
   p.box(m.red, transferX - 0.441, beltDeck - 0.146, -1.41, 0.252, 0.128, 0.29);
   p.add(gearGeometry(0.123, 16, 0.037), m.redDark, transferX - 0.38, beltDeck - 0.08, -1.62, 1, 1, 1, 0, halfPi);
-  opticalGate(p, m, -1.43);
-  opticalGate(p, m, -0.43);
-  p.box(m.red, transferX - 0.33, beltDeck + 0.02, -0.87, 0.1, 0.21, 0.19);
-  p.box(m.dark, transferX - 0.315, beltDeck + 0.12, -0.87, 0.125, 0.16, 0.15, 0.01);
-  for (const dy of [0.085, 0.152]) p.rod(m.lens, transferX - 0.25, beltDeck + dy, -0.87, 0.019, 0.015, 'x');
+}
+
+function readerChannel(p, m, dy) {
+  p.box(m.dark, transferX - 0.315, beltDeck + dy, -0.87, 0.125, 0.066, 0.15, 0.005);
+  p.rod(m.lens, transferX - 0.25, beltDeck + dy, -0.87, 0.019, 0.015, 'x');
 }
 
 function mast(p, m) {
@@ -353,11 +368,12 @@ function mast(p, m) {
   p.add(gearGeometry(0.143, 18, 0.042), m.redLight, 0, 3.158, 0.735, 1, 1, 1, -halfPi);
   p.add(gearGeometry(0.095, 13, 0.042), m.redDark, 0, 3.158, 0.955, 1, 1, 1, -halfPi);
   p.rod(m.steel, 0, 3.188, 0.735, 0.029, 0.09);
+}
+
+function verticalMotor(p, m) {
   p.box(m.redDark, 0.235, 2.724, 1.06, 0.190, 0.526, 0.229, 0.018);
   p.box(m.mould, 0.24, 2.59, 1.058, 0.220, 0.285, 0.250, 0.019);
   p.box(m.terminal, 0.247, 2.424, 1.062, 0.120, 0.049, 0.145);
-  p.box(m.mould, -0.272, 2.990, 0.614, 0.160, 0.094, 0.157, 0.012);
-  p.box(m.redLight, -0.281, 3.047, 0.615, 0.091, 0.03, 0.092);
   for (const [i, material] of [m.wireGold, m.wireRed, m.wireGreen].entries()) {
     const d = 0.018 * i;
     p.cable(material, [[0.24+d,2.44,1.07],[0.30+d,2.32,1.0],[0.263+d,2.00,0.95],
@@ -379,11 +395,12 @@ function carriage(p, m) {
     p.rod(m.dark, dx, 0.004, 1.294, 0.026, 0.016, 'z');
     p.rod(m.zinc, dx, 0.004, 1.305, 0.012, 0.007, 'z');
   }
+}
+
+function forkMotor(p, m) {
   p.box(m.mould, -0.247, 0.105, 0.80, 0.190, 0.22, 0.255, 0.012);
   p.box(m.red, -0.25, 0.225, 0.80, 0.190, 0.047, 0.26);
   p.rod(m.redLight, -0.251, 0.076, 0.550, 0.061, 0.26, 'z');
-  p.box(m.dark, 0.237, 0.050, 0.585, 0.126, 0.14, 0.146, 0.012);
-  p.box(m.terminal, 0.248, -0.032, 0.573, 0.081, 0.035, 0.103);
   for (const [i, material] of [m.wireGold, m.wireRed, m.wireBlue].entries()) {
     const d = 0.011 * i;
     p.cable(material, [[-0.24,0.1,0.72+d],[-0.34,0.09,0.58+d],[-0.32,-0.13,0.49+d],
@@ -438,7 +455,7 @@ function marker(parent, name, x, y, z) {
   return object;
 }
 
-function boardSilkscreen(group) {
+function boardSilkscreen(p) {
   if (typeof document === 'undefined') return;
   const canvas = document.createElement('canvas');
   canvas.width = 300; canvas.height = 640;
@@ -460,73 +477,151 @@ function boardSilkscreen(group) {
   }
   const map = new THREE.CanvasTexture(canvas);
   map.colorSpace = THREE.SRGBColorSpace;
-  const print = new THREE.Mesh(new THREE.PlaneGeometry(0.692, 1.46),
-    new THREE.MeshStandardMaterial({ map, transparent: true, depthWrite: false, roughness: 0.85 }));
-  print.rotation.x = -halfPi;
-  print.position.set(-2.20, 0.327, -0.52);
-  group.add(print);
+  const ink = new THREE.MeshStandardMaterial({ map, transparent: true, depthWrite: false, roughness: 0.85 });
+  p.add(new THREE.PlaneGeometry(0.692, 1.46), ink, -2.20, 0.327, -0.52, 1, 1, 1, -halfPi);
+}
+
+// Keep the rendered geometry for picking. A hole in a rack upright or the gap
+// between a light barrier's heads must allow a ray to reach the part behind it.
+function partRegistry(root) {
+  const entries = new Map();
+  const builds = [];
+  const targets = [];
+  const partBySignal = {};
+  const highlightMaterials = new Map();
+
+  function attach(id, parent) {
+    const holder = new THREE.Group();
+    holder.name = entries.get(id).name;
+    parent.add(holder);
+    const builder = parts(holder);
+    builds.push({ id, holder, builder });
+    return builder;
+  }
+
+  function component(id, name, parent, point, signals = []) {
+    const anchor = marker(parent, name, ...point);
+    entries.set(id, { id, name, signals, anchor, meshes: [] });
+    for (const signal of signals) partBySignal[signal] = id;
+    return attach(id, parent);
+  }
+
+  function finish() {
+    for (const { id, holder, builder } of builds) {
+      builder.finish();
+      for (const mesh of holder.children) {
+        mesh.geometry.computeBoundingBox();
+        mesh.userData.partId = id;
+        entries.get(id).meshes.push(mesh);
+        targets.push(mesh);
+      }
+    }
+    builds.length = 0;
+  }
+
+  function pickPart(raycaster) {
+    root.updateWorldMatrix(true, true);
+    return raycaster.intersectObjects(targets, false)[0]?.object.userData.partId ?? null;
+  }
+
+  function setPartHighlight(id, color) {
+    const part = entries.get(id);
+    if (!part || (!highlightMaterials.has(id) && color == null)) return;
+    // Geometry is batched per component. Its original plastics remain shared
+    // with the rest of the model while the component uses its own lit variants.
+    if (!highlightMaterials.has(id)) {
+      const originals = new Map();
+      const variants = part.meshes.map(mesh => {
+        const original = mesh.material;
+        if (!originals.has(original)) originals.set(original, original.clone());
+        return { mesh, original, lit: originals.get(original) };
+      });
+      highlightMaterials.set(id, variants);
+    }
+    for (const { mesh, original, lit } of highlightMaterials.get(id)) {
+      if (color == null) {
+        mesh.material = original;
+      } else {
+        lit.emissive.set(color);
+        lit.emissiveIntensity = 0.85;
+        lit.color.copy(original.color).lerp(lit.emissive, 0.46);
+        mesh.material = lit;
+      }
+    }
+  }
+  return { component, attach, finish, entries, pickPart, setPartHighlight, partBySignal };
 }
 
 export function createWarehouse() {
   const group = new THREE.Group();
   group.name = 'Automatisiertes Hochregallager 24V · 536631';
   const m = materials();
-  const fixed = parts(group);
-  table(fixed, m);
-  shelves(fixed, m);
-  axisDrive(fixed, m);
-  conveyor(fixed, m);
-  electronics(fixed, m);
-  boardSilkscreen(group);
+  const registry = partRegistry(group);
+  const { component, attach } = registry;
+  table(component('base', 'Bundplade', group, [-2.70, 0.13, 1.58]), m);
+  const rack = component('rack', 'Lagerreol', group, [slotX(2.75), slotY(2) + 0.10, rackZ - 0.05]);
+  shelves(rack, m);
+  driveRails(component('rail', 'Køreskinner og spindel', group, [0.04, 0.425, 0.97]), m);
+  horizontalMotor(component('drive-x', 'Vandret enkodermotor', group, [-2.14, 0.57, 0.94], ['B1','B2','Q3','Q4']), m);
+  const horizontalStop = [2.215, 0.400, 1.19];
+  limitSwitch(component('reference-x', 'Vandret referencekontakt', group, horizontalStop, ['I1']), m, ...horizontalStop);
+  conveyor(component('belt', 'Transportbånd', group, [transferX + 0.10, beltDeck + 0.10, -1.42]), m);
+  beltMotor(component('belt-motor', 'Båndmotor', group, [transferX - 0.435, beltDeck - 0.21, -1.36], ['Q1','Q2']), m);
+  for (const [id, name, z, signal] of [
+    ['inner-gate', 'Indre lysbom', -0.43, 'I2'], ['outer-gate', 'Ydre lysbom', -1.43, 'I3'],
+  ]) {
+    opticalGate(component(id, name, group, [transferX - 0.35, beltDeck + 0.115, z], [signal]), m, z);
+  }
+  for (const [id, name, dy, signal] of [
+    ['reader-lower', 'Nederste sporsensor', 0.085, 'A1'], ['reader-upper', 'Øverste sporsensor', 0.156, 'A2'],
+  ]) {
+    readerChannel(component(id, name, group, [transferX - 0.25, beltDeck + dy, -0.87], [signal]), m, dy);
+  }
+  const io = component('io', 'I/O-kort', group, [-2.31, 0.46, -0.70]);
+  electronics(io, m);
+  boardSilkscreen(io);
   // Five parked carriers plus the red carrier in transit make six workpieces.
   for (const [column, level, color] of [[1,2,'red'],[3,1,'blue'],[1,1,'blue'],[2,0,'white'],[3,0,'white']]) {
-    carrier(fixed, m, slotX(column), slotY(level) + 0.012, rackZ, color);
+    carrier(rack, m, slotX(column), slotY(level) + 0.012, rackZ, color);
   }
-  fixed.finish();
-
   const screw = marker(group, 'Vandret gevindspindel', -1.832, 0.425, 0.970);
-  const screwParts = parts(screw);
+  const screwParts = attach('rail', screw);
   screwParts.add(helicalThread(4.20, 0.068, 0.031, 0.065), m.redLight, 0, 0, 0);
-  screwParts.finish();
   const liftMast = marker(group, 'Regalbetjeningsenhed', transferX, 0, 0);
-  const mastParts = parts(liftMast);
-  mast(mastParts, m);
-  mastParts.finish();
+  mast(component('mast', 'Løftemast', liftMast, [0.14, 2.91, 1.01]), m);
+  verticalMotor(component('drive-y', 'Lodret enkodermotor', liftMast, [0.24, 2.72, 1.06], ['B3','B4','Q5','Q6']), m);
+  const upperStop = [-0.272, 2.990, 0.614];
+  limitSwitch(component('reference-y', 'Lodret referencekontakt', liftMast, upperStop, ['I4']), m, ...upperStop);
   const platform = marker(liftMast, 'Løftevogn', 0, beltDeck, 0);
-  const carriageParts = parts(platform);
-  carriage(carriageParts, m);
-  carriageParts.finish();
+  carriage(component('carriage', 'Løftevogn', platform, [0, 0, 1.19]), m);
+  forkMotor(component('fork-motor', 'Gaffelmotor', platform, [-0.247, 0.105, 0.80], ['Q7','Q8']), m);
+  // Both microswitches are mounted on the moving carriage, one at each end of its slide.
+  const forwardStop = [-0.230, 0.060, 0.306];
+  const retractedStop = [0.237, 0.058, 0.687];
+  limitSwitch(component('fork-out', 'Gaffelkontakt · fremme', platform, forwardStop, ['I5']), m, ...forwardStop);
+  limitSwitch(component('fork-in', 'Gaffelkontakt · tilbage', platform, retractedStop, ['I6']), m, ...retractedStop);
+  const fork = marker(platform, 'Teleskopgaffel', 0, 0, 0);
+  const forkParts = component('fork', 'Teleskopgaffel', fork, [0.141, -0.017, forkRestZ]);
   const extensionRails = marker(platform, 'Mellemslæde', 0, 0, 0);
-  const slides = parts(extensionRails);
+  const slides = attach('fork', extensionRails);
   for (const dx of [-0.14, 0.14]) {
     slides.box(m.steel, dx, -0.071, 0.54, 0.078, 0.052, 0.67);
   }
-  slides.finish();
-  const fork = marker(platform, 'Teleskopgaffel', 0, 0, 0);
-  const forkParts = parts(fork);
   for (const dx of [-0.141, 0.141]) {
     forkParts.box(m.aluminium, dx, -0.017, forkRestZ, 0.070, 0.048, 0.57, 0.008);
     forkParts.box(m.graphite, dx, -0.042, forkRestZ + 0.055, 0.09, 0.033, 0.426);
   }
   forkParts.box(m.red, 0, -0.040, forkRestZ + 0.285, 0.376, 0.094, 0.111, 0.011);
-  forkParts.finish();
   const load = marker(group, 'Rød emneholder', transferX, beltDeck, outerBeltZ);
-  const loadParts = parts(load);
+  const loadParts = component('carrier', 'Emneholder i transport', load, [0, 0.21, 0]);
   carrier(loadParts, m, 0, 0, 0, 'red');
-  loadParts.finish();
   const treads = marker(group, 'Transportbåndets ribber', 0, 0, 0);
-  const treadParts = parts(treads);
+  const treadParts = attach('belt', treads);
   for (let j = 0; j < 23; j++) {
     treadParts.box(m.graphite, transferX, beltDeck + 0.003, -1.58 + j * 0.061, j < 14 ? 0.402 : 0.086, 0.007, 0.010);
   }
-  treadParts.finish();
-
-  const anchors = [
-    marker(group, 'Lagerreol', slotX(2.75), slotY(2) + 0.10, rackZ - 0.05),
-    marker(liftMast, 'Løftemast', 0.14, 2.91, 1.01),
-    marker(group, 'Transportbånd', transferX + 0.10, beltDeck + 0.10, -1.42),
-    marker(group, 'I/O-kort', -2.31, 0.46, -0.70),
-  ];
+  registry.finish();
+  const anchors = ['rack', 'mast', 'belt', 'io'].map(id => registry.entries.get(id).anchor);
   function setPose({ x, y, fork: extension, belt, cargo }) {
     liftMast.position.x = slotX(3 * x);
     platform.position.y = bottomDeck + 2 * deckSpacing * y;
@@ -542,5 +637,8 @@ export function createWarehouse() {
       load.position.set(slotX(cargo.column), slotY(cargo.level) + 0.012, rackZ);
     }
   }
-  return { group, setPose, anchors };
+  return {
+    group, setPose, anchors, parts: [...registry.entries.values()], partBySignal: registry.partBySignal,
+    pickPart: registry.pickPart, setPartHighlight: registry.setPartHighlight,
+  };
 }

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { createWarehouse } from './model.js';
+import { mountInspection } from './inspection.js';
 import { sampleSimulation } from './simulation.js';
 
 const angles = {
@@ -10,7 +11,7 @@ const angles = {
   top: [0, 1, 0.001],
 };
 
-export function createScene() {
+export function createScene({ selectSignal, editWiring }) {
   const canvas = document.querySelector('#machine');
   const stage = document.querySelector('#stage');
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
@@ -66,7 +67,7 @@ export function createScene() {
   controls.cursor.copy(center);
   let dirty = true;
   let modified = false;
-  let annotationsVisible = false;
+
   // Frame the actual silhouette. The empty space above the board corners makes
   // the model's overall bounding box a poor fit for this asymmetric machine.
   const surfacePoints = [];
@@ -150,40 +151,34 @@ export function createScene() {
     modified = true;
   });
 
-  const names = ['Lagerreol', 'Løftemast', 'Transportbånd', 'I/O-kort'];
-  const labels = warehouse.anchors.map((anchor, i) => {
-    const element = document.createElement('div');
-    element.className = 'annotation';
-    const caption = document.createElement('span');
-    caption.textContent = names[i];
-    element.append(caption);
-    element.hidden = true;
-    document.querySelector('#annotations').append(element);
-    return { anchor, element };
-  });
-  const markers = document.querySelector('#markers');
-  markers.addEventListener('click', () => {
-    annotationsVisible = !annotationsVisible;
-    markers.setAttribute('aria-pressed', String(annotationsVisible));
-    markers.title = annotationsVisible ? 'Skjul komponentnavne' : 'Vis komponentnavne';
-    for (const { element } of labels) element.hidden = !annotationsVisible;
+  function focusPart(part) {
+    const box = new THREE.Box3();
+    for (const mesh of part.meshes) box.expandByObject(mesh);
+    if (box.isEmpty()) return;
+    const radius = box.getBoundingSphere(new THREE.Sphere()).radius;
+    const point = box.getCenter(new THREE.Vector3());
+    const direction = point.clone().sub(center);
+    direction.y = 0;
+    if (direction.lengthSq() < .1) direction.set(-.6, 0, 1);
+    direction.normalize().y = .55;
+    direction.normalize();
+    const halfFov = Math.atan(Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * Math.min(camera.aspect, 1));
+    const distance = Math.max(controls.minDistance, 1.3 * radius / Math.sin(halfFov));
+    controls.target.copy(point);
+    camera.position.copy(point).addScaledVector(direction, distance);
+    modified = true;
+    controls.update();
     dirty = true;
+  }
+  const inspection = mountInspection({ warehouse, camera, canvas, focusPart, selectSignal, editWiring,
+    invalidate: () => { dirty = true; },
   });
-  const projected = new THREE.Vector3();
   function render(pose) {
     if (pose) warehouse.setPose(pose);
     if (!pose && !dirty) return;
     renderer.render(scene, camera);
-    if (annotationsVisible) {
-      for (const { anchor, element } of labels) {
-        anchor.getWorldPosition(projected).project(camera);
-        const x = (projected.x + 1) * .5 * stage.clientWidth;
-        const y = (1 - projected.y) * .5 * stage.clientHeight;
-        element.hidden = projected.z < -1 || projected.z > 1 || x < 3 || x > stage.clientWidth - 8 || y < 3 || y > stage.clientHeight - 8;
-        element.style.transform = 'translate(' + Math.round(x) + 'px,' + Math.round(y) + 'px)';
-      }
-    }
+    inspection.projectLabels();
     dirty = false;
   }
-  return { render };
+  return { render, showSignal: inspection.showSignal, setDigitalState: inspection.setDigitalState };
 }

@@ -1,12 +1,16 @@
-const framePattern = /^DI0=([01])\s+DI1=([01])\s+DI2=([01])\s+DI3=([01])\s+DI4=([01])\s+DI5=([01])\s+DI6=([01])\s+DI7=([01])(?:\s+AI0=(\d+\.\d+)\s+AI1=(\d+\.\d+)\s+AI2=(\d+\.\d+)(?:\s+ADC0=(\d{1,5})\s+ADC1=(\d{1,5})\s+ADC2=(\d{1,5}))?)?$/;
+const digitalPattern = /^DI0=([01])\s+DI1=([01])\s+DI2=([01])\s+DI3=([01])\s+DI4=([01])\s+DI5=([01])\s+DI6=([01])\s+DI7=([01])(?=\s|$)/;
+const analogPattern = /^\s+(?:AI|Analog)0=(\d+\.\d+)\s+(?:AI|Analog)1=(\d+\.\d+)\s+(?:AI|Analog)2=(\d+\.\d+)(?=\s|$)(?:\s+ADC0=(\d{1,5})\s+ADC1=(\d{1,5})\s+ADC2=(\d{1,5})(?=\s|$))?/;
 
 export function parseSignalFrame(line) {
-  const match = framePattern.exec(line.trim());
-  if (!match) return null;
+  const text = line.trim();
+  const digital = digitalPattern.exec(text);
+  if (!digital) return null;
+  // The sketch can append its own telemetry after the eight digital levels.
+  const analog = analogPattern.exec(text.slice(digital[0].length));
   return {
-    digital: match.slice(1, 9).map(Number),
-    analog: match[9] === undefined ? [] : match.slice(9, 12).map(Number),
-    adc: match[12] === undefined ? [] : match.slice(12, 15).map(Number),
+    digital: digital.slice(1).map(Number),
+    analog: analog ? analog.slice(1, 4).map(Number) : [],
+    adc: analog?.[4] === undefined ? [] : analog.slice(4, 7).map(Number),
     timestamp: Date.now(),
   };
 }

@@ -28,15 +28,20 @@
           <div class="stage-tools">
             <div class="view-picker"><svg class="icon" aria-hidden="true"><use href="#i-cube"/></svg><select id="view" aria-label="Kameravinkel"><option value="perspective">Perspektiv</option><option value="front">Forfra</option><option value="side">Fra siden</option><option value="top">Oppefra</option></select><svg class="icon" aria-hidden="true"><use href="#i-angle"/></svg></div>
             <div class="stage-actions">
+              <label class="part-picker"><span class="sr-only">Vis en del i modellen</span><select id="part-picker" aria-label="Vis en del i modellen"><option value="">Vælg del</option></select></label>
               <button class="canvas-btn" id="markers" type="button" title="Vis komponentnavne" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-labels"/></svg><span>Navne</span></button>
               <button class="canvas-btn square" id="fullscreen" type="button" aria-label="Fuld skærm" title="Fuld skærm"><svg class="icon" aria-hidden="true"><use href="#i-expand"/></svg></button>
             </div>
           </div>
-          <canvas id="machine" tabindex="0" aria-label="3D-model af højreollageret. Træk for at dreje. Brug piletasterne for at gå rundt og plus eller minus for at zoome."></canvas>
-          <div id="annotations" aria-hidden="true"></div>
+          <canvas id="machine" tabindex="0" aria-label="3D-model af højreollageret. Klik på en del, eller vælg den i listen Vælg del. Træk for at dreje. Brug piletasterne for at gå rundt og plus eller minus for at zoome."></canvas>
+          <div id="annotations" aria-label="Dele på modellen"><svg id="part-leaders" aria-hidden="true"></svg></div>
           <p class="render-message" id="render-message" role="status">Indlæser 3D-modellen…</p>
           <div class="stage-bottom">
-            <div class="orbit-help"><button id="show-help" type="button" title="Kamerabetjening" aria-expanded="false" aria-controls="help"><svg class="icon" aria-hidden="true"><use href="#i-mouse"/></svg><span>Træk for at dreje</span><svg class="icon" aria-hidden="true"><use href="#i-angle"/></svg></button><div id="help" hidden>Træk for at dreje. Rul for at zoome. Højretræk for at panorere. På touch kan du zoome og panorere med to fingre. Med fokus på modellen kan du bruge piletasterne og +/−.</div></div>
+            <div id="live-strip" hidden>
+              <div class="strip-title"><strong>Portenta DI</strong><span id="digital-count">Ingen måling</span></div>
+              <div id="stage-inputs" role="group" aria-label="Digitale USB-indgange i tegningen"></div>
+            </div>
+            <div class="orbit-help"><button id="show-help" type="button" title="Kamerabetjening" aria-expanded="false" aria-controls="help"><svg class="icon" aria-hidden="true"><use href="#i-mouse"/></svg><span>Træk for at dreje</span><svg class="icon" aria-hidden="true"><use href="#i-angle"/></svg></button><div id="help" hidden>Klik på en del for at undersøge den. Træk for at dreje. Rul for at zoome. Højretræk for at panorere. På touch kan du zoome og panorere med to fingre. Med fokus på modellen kan du bruge piletasterne og +/−.</div></div>
             <div class="zoom-tools"><button id="zoom-out" type="button" aria-label="Zoom ud" title="Zoom ud"><svg class="icon" aria-hidden="true"><use href="#i-zoomout"/></svg></button><button id="zoom-in" type="button" aria-label="Zoom ind" title="Zoom ind"><svg class="icon" aria-hidden="true"><use href="#i-zoomin"/></svg></button><button id="reset-view" type="button" aria-label="Nulstil kamera" title="Nulstil kamera"><svg class="icon" aria-hidden="true"><use href="#i-reset"/></svg></button></div>
           </div>
         </div>
@@ -45,7 +50,11 @@
           <div class="operation"><span class="field-label">Democyklus</span><strong id="operation">Indlagring</strong></div>
           <label class="timeline"><span class="sr-only">Position i democyklussen</span><input type="range" id="seek" min="0" max="1000" step="1" value="0"><span id="clock">00:00</span></label>
         </div>
-        <div class="transport hardware-caption" id="hardware-caption" hidden><svg class="icon" aria-hidden="true"><use href="#i-cube"/></svg><div><span class="field-label">USB-visning</span><strong>Maskinens opbygning</strong></div><small>Portenta-skitsen sender indgangsværdier. Maskinens position vises kun i demoen.</small></div>
+        <div class="transport hardware-caption" id="hardware-caption" hidden><svg class="icon" aria-hidden="true"><use href="#i-usb"/></svg><div><span class="field-label">USB live</span><strong>Digitale indgange</strong></div><small>Grøn viser høj (1). Under <b>Tilknyt indgange</b> kan du vælge, hvilken del hver ledning går til.</small></div>
+        <section id="part-info" aria-label="Valgt del" hidden>
+          <div class="part-copy"><div class="part-heading"><strong id="part-name"></strong><span id="part-state"></span></div><p id="part-description"></p><div id="part-signals"></div></div>
+          <div class="part-actions"><button type="button" id="focus-part">Vis tæt på</button><button type="button" id="map-part" hidden>Tilknyt del</button><button type="button" id="close-part" aria-label="Luk delvisning" title="Luk delvisning">×</button></div>
+        </section>
       </section>
       <aside class="monitor" aria-labelledby="monitor-title">
         <div class="monitor-head"><svg class="icon" aria-hidden="true"><use href="#i-wave"/></svg><h2 id="monitor-title">Signalmonitor</h2></div>
@@ -53,6 +62,7 @@
         <div class="monitor-body">
           <div id="usb-setup" hidden><p id="usb-message" role="status"></p><div class="usb-actions"><button id="connect" type="button">Vælg Arduino</button><button id="reconnect" type="button">Forbind igen</button><button id="disconnect" type="button">Afbryd</button></div></div>
           <div class="tabs" role="group" aria-label="Signalgruppe"><button data-tab="inputs" type="button" aria-pressed="true">Indgange</button><button data-tab="outputs" type="button" aria-pressed="false">Udgange</button></div>
+          <div id="wiring-tools" hidden><button id="toggle-wiring" type="button" aria-expanded="false" aria-controls="wiring-editor">Tilknyt indgange</button><div id="wiring-editor" hidden><p>Vælg den lagerklemme, som hver Portenta-indgang er forbundet med. Valget gemmes i denne browser.</p><div id="wiring-fields"></div><p id="wiring-status" role="status"></p></div></div>
           <div id="channel-list" aria-label="Signalværdier"></div>
           <div class="scope"><div class="scope-heading"><span>Signalspor</span><b id="scope-label"></b></div><svg id="scope-plot" viewBox="0 0 280 49" preserveAspectRatio="none" role="img" aria-label="Historik for det valgte signal"><path class="scope-grid" d="M0 9h280M0 25h280M0 41h280M40 0v49m50-49v49m50-49v49m50-49v49m50-49v49"/><path id="trace"/></svg></div>
         </div>
