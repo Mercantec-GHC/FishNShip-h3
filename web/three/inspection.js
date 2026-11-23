@@ -25,6 +25,8 @@ const descriptions = {
   base: 'Bundpladen bærer reolen, køreskinnerne, båndet og I/O-kortet.',
 };
 const digitalIds = Array.from({ length: 8 }, (_, i) => 'DI' + i);
+const sensorIds = ['I1', 'I2', 'I3', 'I4', 'I5', 'I6'];
+const isBarrier = id => id === 'inner-gate' || id === 'outer-gate';
 const nameLabels = new Set(['rack', 'mast', 'belt', 'io']);
 const bySignal = new Map(signals.map(signal => [signal.id, signal]));
 const q = id => document.getElementById(id);
@@ -42,7 +44,9 @@ export function mountInspection({ warehouse, canvas, camera, invalidate, focusPa
   const stage = q('stage'), picker = q('part-picker'), info = q('part-info');
   const parts = new Map(warehouse.parts.map(part => [part.id, part]));
   const projected = new THREE.Vector3();
-  let state = { source: 'demo', levels: {}, mapping: {} };
+  let state = { source: 'demo', levels: {}, mapping: {}, activeLevels: {} };
+  let activeParts = new Map();
+  const pulseStarts = new Map(), recentPulses = new Map();
   let selectedChannel = null, selectedPart = null, namesVisible = false;
   let currentLabels = [];
   let detailSignalKey = null;
@@ -72,14 +76,19 @@ export function mountInspection({ warehouse, canvas, camera, invalidate, focusPa
     button.className = 'part-tag';
     button.dataset.part = part.id;
     const caption = document.createElement('span');
-    button.append(caption);
+    const status = document.createElement('small');
+    status.className = 'activation-state';
+    status.hidden = true;
+    button.append(caption, status);
     button.hidden = true;
     button.addEventListener('click', () => inspectPart(part.id));
     q('annotations').append(button);
-    const line = svgElement('line', 'part-leader'), dot = svgElement('circle', 'part-point');
+    const line = svgElement('line', 'part-leader'), halo = svgElement('circle', 'sensor-halo'), dot = svgElement('circle', 'part-point');
+    halo.setAttribute('r', '14');
+    halo.toggleAttribute('data-barrier', isBarrier(part.id));
     dot.setAttribute('r', '3');
-    line.style.display = dot.style.display = 'none';
-    labels.set(part.id, { part, button, caption, line, dot });
+    line.style.display = dot.style.display = halo.style.display = 'none';
+    labels.set(part.id, { part, button, caption, status, line, dot, halo });
   }
   for (const id of digitalIds) {
     const button = document.createElement('button');
@@ -108,7 +117,13 @@ export function mountInspection({ warehouse, canvas, camera, invalidate, focusPa
     const status = q('part-state');
     status.hidden = !id || (state.source === 'usb' && !digitalIds.includes(id));
     const level = state.levels[id];
-    status.textContent = id ? id + ' · ' + levelName(level) : '';
+    const sensorKnown = state.source === 'usb' && state.mapping[id] && level != null;
+    const sensorOn = sensorKnown && level === state.activeLevels[id];
+    let sensorText = '';
+    if (sensorKnown) sensorText = isBarrier(part?.id) ? (sensorOn ? 'Stråle brudt' : 'Stråle fri') : (sensorOn ? 'Aktiv' : 'Inaktiv');
+    status.textContent = id ? [id, levelName(level), sensorText].filter(Boolean).join(' · ') : '';
+    status.toggleAttribute('data-linked', Boolean(sensorKnown));
+    status.toggleAttribute('data-sensor-active', Boolean(sensorOn));
     status.dataset.level = level === 1 ? 'high' : level === 0 ? 'low' : 'unknown';
     q('focus-part').hidden = !part;
     q('map-part').hidden = state.source !== 'usb' || !digitalIds.includes(id);
@@ -147,61 +162,108 @@ export function mountInspection({ warehouse, canvas, camera, invalidate, focusPa
     q('live-strip').hidden = !usb;
     picker.value = currentId || '';
     updateDetails(parts.get(currentId));
-    const active = new Map();
     if (usb) {
       let high = 0, measured = false;
       for (const [id, button] of chips) {
         const level = state.levels[id];
         const signal = state.mapping[id], partId = warehouse.partBySignal[signal];
         measured ||= level === 0 || level === 1;
-        if (level === 1) {
-          high++;
-          if (partId) {
-            if (!active.has(partId)) active.set(partId, []);
-            active.get(partId).push(id);
-          }
-        }
+        if (level === 1) high++;
+        const sensorOn = Boolean(partId && activeParts.get(partId)?.includes(id));
+        button.toggleAttribute('data-linked', Boolean(partId));
+        button.toggleAttribute('data-sensor-active', sensorOn);
         button.dataset.level = level === 1 ? 'high' : level === 0 ? 'low' : 'unknown';
         button.setAttribute('aria-pressed', String(id === selectedChannel));
-        const hint = id + ' · ' + levelName(level) + (signal ? ' · ' + signal + ' · ' + parts.get(partId).name : ' · Ikke tilknyttet');
+        const hint = id + ' · ' + levelName(level) + (signal ? ' · ' + signal + ' · ' + parts.get(partId).name : ' · Ikke tilknyttet') + (sensorOn ? ' · Aktiv' : '');
         button.title = hint;
         button.setAttribute('aria-label', hint);
       }
-      q('digital-count').textContent = measured ? high + (high === 1 ? ' høj' : ' høje') : 'Ingen måling';
+      const count = digitalIds.some(id => state.mapping[id]) ? activeParts.size + (activeParts.size === 1 ? ' aktiv' : ' aktive') : high + (high === 1 ? ' høj' : ' høje');
+      q('digital-count').textContent = measured ? count : 'Ingen måling';
     }
     currentLabels = [];
     for (const [id, item] of labels) {
-      const currents = active.get(id);
+      const currents = activeParts.get(id);
+      const recent = recentPulses.get(id);
       const selected = id === currentId;
       const color = currents ? 0x00db81 : selected ? 0x398dff : null;
       if ((highlights.get(id) ?? null) !== color) {
         warehouse.setPartHighlight(id, color);
+        if (isBarrier(id)) warehouse.setBarrierActive(id, Boolean(currents));
         highlights.set(id, color);
       }
-      const visible = selected || currents || (namesVisible && nameLabels.has(id));
+      const visible = selected || currents || recent || (namesVisible && nameLabels.has(id));
       if (!visible) {
         item.button.hidden = true;
-        item.line.style.display = item.dot.style.display = 'none';
+        item.line.style.display = item.dot.style.display = item.halo.style.display = 'none';
+        delete item.halo.dataset.state;
+        delete item.button.dataset.state;
         continue;
       }
-      const mode = currents ? 'active' : selected ? 'selected' : 'name';
-      item.button.dataset.state = item.dot.dataset.state = item.line.dataset.state = mode;
+      const mode = currents ? 'active' : recent ? 'recent' : selected ? 'selected' : 'name';
+      item.button.dataset.state = item.dot.dataset.state = item.line.dataset.state = item.halo.dataset.state = mode;
       item.button.toggleAttribute('data-selected', selected);
-      const code = currents ? currents.join(' + ') : selected ? selectedChannel : null;
+      const channels = currents || recent?.channels;
+      const code = channels ? [...new Set(channels.map(raw => usb ? state.mapping[raw] : raw))].join(' + ') : selected ? selectedChannel : null;
       const text = (code ? code + ' · ' : '') + item.part.name;
       if (item.caption.textContent !== text) item.caption.textContent = text;
-      item.button.title = (currents ? 'Høj (1) · ' : '') + text;
+      const action = currents ? (isBarrier(id) ? 'Stråle brudt' : 'Aktiv') : recent ? 'Netop aktiv' : '';
+      item.status.hidden = !action;
+      if (item.status.textContent !== action) item.status.textContent = action;
+      item.button.title = [text, action, usb ? channels?.join(' + ') : ''].filter(Boolean).join(' · ');
       item.button.setAttribute('aria-label', item.button.title);
       item.button.dataset.code = code || '';
       currentLabels.push(item);
     }
     invalidate();
   }
+  function forgetPulse(id) {
+    clearTimeout(recentPulses.get(id)?.timer);
+    recentPulses.delete(id);
+  }
   function setDigitalState(next) {
     const differentSource = state.source !== next.source;
     if (differentSource) { selectedChannel = selectedPart = null; }
+    const usb = next.source === 'usb';
+    const active = new Map();
+    for (const channel of usb ? digitalIds : sensorIds) {
+      const signal = usb ? next.mapping[channel] : channel;
+      const partId = warehouse.partBySignal[signal];
+      if (!partId || next.levels[channel] !== (usb ? next.activeLevels[channel] : 1)) continue;
+      if (!active.has(partId)) active.set(partId, []);
+      active.get(partId).push(channel);
+    }
+
+    // A brief measured USB pulse can start and end before the next paint.
+    // Extinguish the live light immediately; keep a separately labelled trace.
+    const reset = differentSource || !usb || !digitalIds.some(id => next.levels[id] != null) ||
+      digitalIds.some(id => next.mapping[id] !== state.mapping[id] || next.activeLevels[id] !== state.activeLevels[id]);
+    if (reset) {
+      pulseStarts.clear();
+      for (const id of recentPulses.keys()) forgetPulse(id);
+    } else {
+      const now = performance.now();
+      for (const signal of sensorIds) {
+        const id = warehouse.partBySignal[signal];
+        const channels = active.get(id), before = activeParts.get(id);
+        if (channels && !before) {
+          forgetPulse(id);
+          if (channels.some(raw => state.levels[raw] != null)) pulseStarts.set(id, now);
+        } else if (before && !channels) {
+          const started = pulseStarts.get(id);
+          if (started !== undefined && now - started <= 900) {
+            recentPulses.set(id, { channels: before, timer: setTimeout(() => {
+              recentPulses.delete(id);
+              refresh();
+            }, 1200) });
+          }
+          pulseStarts.delete(id);
+        }
+      }
+    }
     state = next;
-    if (next.source === 'usb' || selectedChannel || differentSource) refresh();
+    activeParts = active;
+    refresh();
   }
   function showSignal({ source, id, intent }) {
     if (intent === 'sync' || source !== state.source) return;
@@ -285,12 +347,13 @@ export function mountInspection({ warehouse, canvas, camera, invalidate, focusPa
       placed.push({ left: info.offsetLeft, right: info.offsetLeft + info.offsetWidth,
         top: info.offsetTop, bottom: info.offsetTop + info.offsetHeight });
     }
-    for (const { part, button, line, dot } of currentLabels) {
+    for (const { part, button, line, dot, halo } of currentLabels) {
       part.anchor.getWorldPosition(projected).project(camera);
       const x = (projected.x + 1) * w / 2, y = (1 - projected.y) * h / 2;
       const off = Math.abs(projected.z) > 1 || x < 0 || x > w || y < 0 || y > h;
       button.hidden = off;
       line.style.display = dot.style.display = off ? 'none' : '';
+      halo.style.display = !off && ['active','recent'].includes(button.dataset.state) ? '' : 'none';
       if (off) continue;
       const width = button.offsetWidth, height = button.offsetHeight;
       const columns = [x + 13, x - width - 13].map(raw => THREE.MathUtils.clamp(raw, 3, w - width - 3));
@@ -318,6 +381,7 @@ export function mountInspection({ warehouse, canvas, camera, invalidate, focusPa
       line.setAttribute('x1', x); line.setAttribute('y1', y);
       line.setAttribute('x2', Math.min(left + width, Math.max(left, x))); line.setAttribute('y2', top + height / 2);
       dot.setAttribute('cx', x); dot.setAttribute('cy', y);
+      halo.setAttribute('cx', x); halo.setAttribute('cy', y);
     }
   }
   return { showSignal, setDigitalState, projectLabels };

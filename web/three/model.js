@@ -12,6 +12,9 @@ const bottomDeck = 0.93;
 const deckSpacing = 0.70;
 const beltDeck = bottomDeck + 2 * deckSpacing * 0.16;
 const outerBeltZ = -1.48;
+const gateHeadOffset = 0.35;
+const gateLensOffset = 0.058;
+const gateLensHeight = beltDeck + 0.115;
 const slotX = column => transferX - column * columnPitch;
 const slotY = level => bottomDeck + level * deckSpacing;
 const halfPi = Math.PI / 2;
@@ -295,12 +298,96 @@ function limitSwitch(p, m, x, y, z) {
 }
 
 function opticalGate(p, m, z) {
-  for (const dx of [-0.35, 0.35]) {
+  for (const dx of [-gateHeadOffset, gateHeadOffset]) {
     const x = transferX + dx;
     p.box(m.red, x, beltDeck + 0.016, z, 0.072, 0.223, 0.095, 0.010);
-    p.box(m.dark, x, beltDeck + 0.115, z, 0.115, 0.106, 0.109, 0.008);
-    p.rod(m.lens, x - Math.sign(dx) * 0.058, beltDeck + 0.115, z, 0.025, 0.016, 'x');
+    p.box(m.dark, x, gateLensHeight, z, 0.115, 0.106, 0.109, 0.008);
+    p.rod(m.lens, x - Math.sign(dx) * gateLensOffset, gateLensHeight, z, 0.025, 0.016, 'x');
   }
+}
+
+function lensHaloTexture() {
+  const size = 96, pixels = new Uint8Array(size * size * 4);
+  for (let row = 0; row < size; row++) {
+    for (let col = 0; col < size; col++) {
+      const radius = Math.hypot((2 * col + 1) / size - 1, (2 * row + 1) / size - 1);
+      const core = 1 - THREE.MathUtils.smoothstep(radius, .1, .24);
+      const ring = 1 - THREE.MathUtils.smoothstep(Math.abs(radius - .58), .018, .066);
+      const halo = Math.max(0, 1 - radius) ** 2;
+      const index = (row * size + col) * 4;
+      pixels[index] = 25 + 222 * core + 105 * ring;
+      pixels[index + 1] = 255;
+      pixels[index + 2] = 125 + 122 * core + 65 * ring;
+      pixels[index + 3] = 255 * Math.max(core, .92 * ring, .73 * halo);
+    }
+  }
+  const texture = new THREE.DataTexture(pixels, size, size);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.magFilter = THREE.LinearFilter;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.generateMipmaps = true;
+  texture.needsUpdate = true;
+  return texture;
+}
+
+// Diagram overlays on the optical paths. A short gap denotes interruption;
+// the rings are centred on the real lenses, including when viewed end-on.
+function opticalIndications(root) {
+  const overlays = new Map();
+  const shaft = new THREE.CylinderGeometry(1, 1, 1, 16);
+  shaft.rotateZ(halfPi);
+  const overlay = { transparent: true, depthTest: false, depthWrite: false, toneMapped: false, fog: false };
+  const aura = new THREE.MeshBasicMaterial({ ...overlay, color: 0x00ed82, opacity: 0.42 });
+  const core = new THREE.MeshBasicMaterial({ ...overlay, color: 0x91ffd5, opacity: 0.98 });
+  const halo = new THREE.SpriteMaterial({ ...overlay, map: lensHaloTexture() });
+  const lensX = gateHeadOffset - gateLensOffset;
+  const halfGap = 0.055;
+  const length = lensX - halfGap;
+
+  function add(id, z) {
+    const indication = new THREE.Group();
+    indication.position.set(transferX, gateLensHeight, z);
+    indication.name = 'Lysvej · ' + id;
+    indication.visible = false;
+    root.add(indication);
+    const touchTargets = [];
+    for (const side of [-1, 1]) {
+      for (const [material, radius, order] of [[aura, 0.048, 30], [core, 0.018, 31]]) {
+        const mesh = new THREE.Mesh(shaft, material);
+        mesh.position.x = side * (lensX + halfGap) / 2;
+        mesh.scale.set(length, radius, radius);
+        mesh.renderOrder = order;
+        indication.add(mesh);
+        if (material === aura) touchTargets.push(mesh);
+      }
+      const glow = new THREE.Sprite(halo);
+      glow.position.x = side * lensX;
+      glow.scale.set(0.34, 0.34, 1);
+      glow.renderOrder = 32;
+      indication.add(glow);
+    }
+    overlays.set(id, { indication, touchTargets });
+  }
+
+  function setActive(id, active) {
+    const gate = overlays.get(id);
+    if (gate) gate.indication.visible = Boolean(active);
+  }
+
+  function pick(raycaster) {
+    let nearest = Infinity, result = null;
+    for (const [id, { indication, touchTargets }] of overlays) {
+      if (!indication.visible) continue;
+      indication.updateWorldMatrix(true, true);
+      const hit = raycaster.intersectObjects(touchTargets, false)[0];
+      if (hit && hit.distance < nearest) {
+        nearest = hit.distance;
+        result = id;
+      }
+    }
+    return result;
+  }
+  return { add, setActive, pick };
 }
 
 function conveyor(p, m) {
@@ -556,6 +643,7 @@ export function createWarehouse() {
   const group = new THREE.Group();
   group.name = 'Automatisiertes Hochregallager 24V · 536631';
   const m = materials();
+  const optical = opticalIndications(group);
   const registry = partRegistry(group);
   const { component, attach } = registry;
   table(component('base', 'Bundplade', group, [-2.70, 0.13, 1.58]), m);
@@ -570,7 +658,8 @@ export function createWarehouse() {
   for (const [id, name, z, signal] of [
     ['inner-gate', 'Indre lysbom', -0.43, 'I2'], ['outer-gate', 'Ydre lysbom', -1.43, 'I3'],
   ]) {
-    opticalGate(component(id, name, group, [transferX - 0.35, beltDeck + 0.115, z], [signal]), m, z);
+    opticalGate(component(id, name, group, [transferX - gateHeadOffset, gateLensHeight, z], [signal]), m, z);
+    optical.add(id, z);
   }
   for (const [id, name, dy, signal] of [
     ['reader-lower', 'Nederste sporsensor', 0.085, 'A1'], ['reader-upper', 'Øverste sporsensor', 0.156, 'A2'],
@@ -639,6 +728,7 @@ export function createWarehouse() {
   }
   return {
     group, setPose, anchors, parts: [...registry.entries.values()], partBySignal: registry.partBySignal,
-    pickPart: registry.pickPart, setPartHighlight: registry.setPartHighlight,
+    pickPart: raycaster => optical.pick(raycaster) ?? registry.pickPart(raycaster),
+    setPartHighlight: registry.setPartHighlight, setBarrierActive: optical.setActive,
   };
 }

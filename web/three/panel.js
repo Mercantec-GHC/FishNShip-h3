@@ -11,18 +11,32 @@ const portentaGroups = {
 };
 const pdfInputs = new Map(demoGroups.inputs.map(channel => [channel.id, channel]));
 const wiringKey = 'fishnship.536631.wiring.v1.';
+const polarityKey = 'fishnship.536631.polarity.v1.';
 const voltage = new Intl.NumberFormat('da-DK', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
 const windowSeconds = 5;
 const windowWidth = 280;
 
+function loadSetting(key) {
+  try { return localStorage.getItem(key); } catch { return null; }
+}
+
+function activeLevelFor(id, signal) {
+  if (!signal) return 1;
+  const stored = loadSetting(polarityKey + id + '.' + signal);
+  if (stored === '0' || stored === '1') return Number(stored);
+  // In the 536631 circuit, breaking a light beam cuts phototransistor current.
+  return signal === 'I2' || signal === 'I3' ? 0 : 1;
+}
+
 function readWiring() {
   const mapping = {};
+  const activeLevels = {};
   for (const { id } of portentaGroups.inputs) {
-    let stored = null;
-    try { stored = localStorage.getItem(wiringKey + id); } catch { /* Storage may be disabled. */ }
+    const stored = loadSetting(wiringKey + id);
     mapping[id] = pdfInputs.has(stored) ? stored : null;
+    activeLevels[id] = activeLevelFor(id, mapping[id]);
   }
-  return Object.freeze(mapping);
+  return { mapping: Object.freeze(mapping), activeLevels: Object.freeze(activeLevels) };
 }
 
 // Reveal a model-selected row inside the monitor without moving the page or camera.
@@ -121,9 +135,10 @@ export function mountSignalPanel({ onSourceChange, onSelectSignal, onDigitalStat
   let demo = sampleSimulation(0);
   let playing = true;
   let lastPlotTime = null;
-  let mapping = readWiring();
+  let { mapping, activeLevels } = readWiring();
   let emittedKey = '';
   let emittedMapping;
+  let emittedActiveLevels;
 
   function emitLevels() {
     if (!onDigitalState) return;
@@ -134,10 +149,11 @@ export function mountSignalPanel({ onSourceChange, onSelectSignal, onDigitalStat
       for (const { id, index } of portentaGroups.inputs) levels[id] = usb.frame?.digital[index] ?? null;
     }
     const key = source + Object.values(levels).map(value => value ?? '-').join('');
-    if (key === emittedKey && mapping === emittedMapping) return;
+    if (key === emittedKey && mapping === emittedMapping && activeLevels === emittedActiveLevels) return;
     emittedKey = key;
     emittedMapping = mapping;
-    onDigitalState({ source, levels, mapping });
+    emittedActiveLevels = activeLevels;
+    onDigitalState({ source, levels, mapping, activeLevels });
   }
 
   function emitSelection(intent) {
@@ -152,8 +168,13 @@ export function mountSignalPanel({ onSourceChange, onSelectSignal, onDigitalStat
   }
 
   function applyWiring(next, announce = '') {
-    mapping = Object.freeze(next);
-    for (const [id, select] of wiringSelects) select.value = mapping[id] ?? '';
+    mapping = Object.freeze(next.mapping);
+    activeLevels = Object.freeze(next.activeLevels);
+    for (const [id, controls] of wiringSelects) {
+      controls.signal.value = mapping[id] ?? '';
+      controls.active.value = String(activeLevels[id]);
+      controls.active.disabled = !mapping[id];
+    }
     setText(wiringStatus, announce);
     if (source !== 'usb') return;
     renderRows();
@@ -162,8 +183,8 @@ export function mountSignalPanel({ onSourceChange, onSelectSignal, onDigitalStat
   }
 
   for (const { id } of portentaGroups.inputs) {
-    const label = document.createElement('label');
-    label.className = 'wiring-field';
+    const field = document.createElement('div');
+    field.className = 'wiring-field';
     const name = document.createElement('span');
     name.textContent = id;
     const select = document.createElement('select');
@@ -174,24 +195,43 @@ export function mountSignalPanel({ onSourceChange, onSelectSignal, onDigitalStat
       select.add(new Option(`${input.id} · ${input.label} · kl. ${input.terminal}`, input.id));
     }
     select.value = mapping[id] ?? '';
+    const active = document.createElement('select');
+    active.id = 'wiring-active-' + id;
+    active.className = 'wiring-polarity';
+    active.setAttribute('aria-label', `Aktivt niveau for ${id}`);
+    active.add(new Option('Aktiv ved 0', '0'));
+    active.add(new Option('Aktiv ved 1', '1'));
+    active.value = String(activeLevels[id]);
+    active.disabled = !mapping[id];
     select.addEventListener('change', () => {
       const next = select.value || null;
-      let message = next ? `${id} er knyttet til ${next}.` : `Tilknytningen for ${id} er fjernet.`;
+      const level = activeLevelFor(id, next);
+      let message = next ? `${id} er knyttet til ${next}. Sensoren er aktiv ved ${level}.` : `Tilknytningen for ${id} er fjernet.`;
       try {
         if (next) localStorage.setItem(wiringKey + id, next);
         else localStorage.removeItem(wiringKey + id);
       } catch {
         message += ' Browseren kunne kun gemme ændringen for denne visning.';
       }
-      applyWiring({ ...mapping, [id]: next }, message);
+      applyWiring({ mapping: { ...mapping, [id]: next }, activeLevels: { ...activeLevels, [id]: level } }, message);
     });
-    label.append(name, select);
-    find('wiring-fields').append(label);
-    wiringSelects.set(id, select);
+    active.addEventListener('change', () => {
+      const signal = mapping[id];
+      if (!signal) return;
+      const level = Number(active.value);
+      let message = `${signal} er aktiv, når ${id} er ${level}.`;
+      try { localStorage.setItem(polarityKey + id + '.' + signal, String(level)); } catch {
+        message += ' Browseren kunne kun gemme ændringen for denne visning.';
+      }
+      applyWiring({ mapping, activeLevels: { ...activeLevels, [id]: level } }, message);
+    });
+    field.append(name, select, active);
+    find('wiring-fields').append(field);
+    wiringSelects.set(id, { signal: select, active });
   }
   toggleWiring.addEventListener('click', () => openWiring(wiringEditor.hidden));
   window.addEventListener('storage', event => {
-    if (event.key === null || event.key.startsWith(wiringKey)) applyWiring(readWiring());
+    if (event.key === null || event.key.startsWith(wiringKey) || event.key.startsWith(polarityKey)) applyWiring(readWiring());
   });
 
   function renderTrace() {
@@ -211,16 +251,20 @@ export function mountSignalPanel({ onSourceChange, onSelectSignal, onDigitalStat
   }
 
   function renderRows() {
-    for (const { channel, button, name, reading } of rows.values()) {
+    for (const { channel, button, name, reading, activeBadge } of rows.values()) {
       const live = source === 'usb';
       const value = live ? usbValue(usb.frame, channel) : Number(demo.signals[channel.id]);
       let label = channel.label;
       let display = value === null ? '—' : String(value);
       let missing = value === null;
+      const isSensorActive = live && !channel.analog && Boolean(mapping[channel.id]) && value === activeLevels[channel.id];
+      button.toggleAttribute('data-linked', live && !channel.analog && Boolean(mapping[channel.id]));
+      button.toggleAttribute('data-sensor-active', isSensorActive);
+      activeBadge.hidden = !isSensorActive;
       if (live && !channel.analog) {
         const linked = pdfInputs.get(mapping[channel.id]);
         label = linked ? `${linked.id} · ${linked.label}` : 'Ikke tilknyttet';
-        button.title = linked ? `${linked.id} · Klemme ${linked.terminal}` : 'Portenta-indgang uden tilknyttet klemme';
+        button.title = linked ? `${linked.id} · Klemme ${linked.terminal} · Aktiv ved ${activeLevels[channel.id]}` : 'Portenta-indgang uden tilknyttet klemme';
       }
       if (channel.analog) {
         const volts = usb.frame?.analog[channel.index];
@@ -268,14 +312,18 @@ export function mountSignalPanel({ onSourceChange, onSelectSignal, onDigitalStat
       const led = document.createElement('span');
       led.className = 'channel-led';
       led.setAttribute('aria-hidden', 'true');
+      const activeBadge = document.createElement('span');
+      activeBadge.className = 'channel-active';
+      activeBadge.textContent = 'Aktiv';
+      activeBadge.hidden = true;
       const reading = document.createElement('span');
       reading.className = 'channel-reading';
-      value.append(led, reading);
+      value.append(activeBadge, led, reading);
       button.append(code, name, value);
       if (channel.terminal) button.title = `Klemme ${channel.terminal}${channel.motor ? ' · ' + channel.motor : ''}`;
       button.addEventListener('click', () => chooseChannel(channel.id, 'user'));
       fragment.append(button);
-      rows.set(channel.id, { button, name, reading, channel });
+      rows.set(channel.id, { button, name, reading, activeBadge, channel });
     }
     list.replaceChildren(fragment);
     list.scrollTop = 0;
@@ -367,7 +415,7 @@ export function mountSignalPanel({ onSourceChange, onSelectSignal, onDigitalStat
   return {
     selectModelSignal,
     editWiring(id) {
-      const select = wiringSelects.get(id);
+      const select = wiringSelects.get(id)?.signal;
       if (!select) return false;
       if (source !== 'usb') changeSource('usb');
       selectModelSignal(id);
