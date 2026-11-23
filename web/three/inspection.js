@@ -51,7 +51,6 @@ export function mountInspection({ warehouse, canvas, camera, invalidate, focusPa
   let currentLabels = [];
   let detailSignalKey = null;
   const labels = new Map(), highlights = new Map(), chips = new Map();
-  const infoHome = info.parentElement;
 
   function inspectPart(id) {
     const part = parts.get(id);
@@ -282,11 +281,7 @@ export function mountInspection({ warehouse, canvas, camera, invalidate, focusPa
   picker.addEventListener('change', () => picker.value ? inspectPart(picker.value) : close());
   q('map-part').addEventListener('click', () => {
     const id = selectedChannel;
-    const edit = () => {
-      if (editWiring(id)) q('wiring-editor').scrollIntoView({ block: 'nearest' });
-    };
-    if (document.fullscreenElement) document.exitFullscreen().then(edit);
-    else edit();
+    if (editWiring(id)) q('wiring-' + id).scrollIntoView({ block: 'nearest' });
   });
   q('focus-part').addEventListener('click', () => {
     const part = parts.get(currentPartId());
@@ -303,11 +298,6 @@ export function mountInspection({ warehouse, canvas, camera, invalidate, focusPa
     markers.setAttribute('aria-pressed', String(namesVisible));
     markers.title = namesVisible ? 'Skjul komponentnavne' : 'Vis komponentnavne';
     refresh();
-  });
-  document.addEventListener('fullscreenchange', () => {
-    if (document.fullscreenElement === stage) stage.append(info);
-    else infoHome.append(info);
-    invalidate();
   });
 
   const ray = new THREE.Raycaster(), mouse = new THREE.Vector2();
@@ -343,10 +333,6 @@ export function mountInspection({ warehouse, canvas, camera, invalidate, focusPa
     const tools = stage.querySelector('.stage-tools'), footer = stage.querySelector('.stage-bottom');
     const topLimit = tools.offsetTop + tools.offsetHeight + 5;
     const bottomLimit = footer.offsetTop - 5;
-    if (info.parentElement === stage && !info.hidden) {
-      placed.push({ left: info.offsetLeft, right: info.offsetLeft + info.offsetWidth,
-        top: info.offsetTop, bottom: info.offsetTop + info.offsetHeight });
-    }
     for (const { part, button, line, dot, halo } of currentLabels) {
       part.anchor.getWorldPosition(projected).project(camera);
       const x = (projected.x + 1) * w / 2, y = (1 - projected.y) * h / 2;

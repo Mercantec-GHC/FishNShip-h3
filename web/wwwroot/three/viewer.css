@@ -46,7 +46,6 @@ h1 span { color: #697a87; font-weight: 420; }
 .viewer, .monitor { border-radius: 12px; overflow: hidden; min-width: 0; }
 .viewer { border: 1px solid #c4ced4; display: flex; flex-direction: column; background: #fff; }
 .stage { position: relative; isolation: isolate; height: clamp(420px, 65vh, 835px); min-height: 0; flex: 1; background: var(--paper3d); }
-.stage:fullscreen { width: 100%; height: 100%; }
 #machine { position: absolute; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
 #machine:active { cursor: grabbing; }
 #machine:focus-visible { outline-offset: -3px; }
@@ -156,7 +155,6 @@ h1 span { color: #697a87; font-weight: 420; }
 #part-info .part-actions { justify-content: end; flex: 0 1 auto; }
 #part-info .part-actions button { border: 1px solid #c0cdd7; background: #fff; color: #31495d; border-radius: 5px; font: 580 11px/1.25 var(--font); padding: 6px 8px; }
 #part-info .part-actions #close-part { font-size: 16px; line-height: 1; padding: 4px 7px; }
-#stage:fullscreen > #part-info { position: absolute; bottom: 94px; left: 17px; z-index: 3; width: min(530px, calc(100% - 34px)); max-height: 32%; overflow-y: auto; border: 1px solid #c0cdd7; border-radius: 8px; box-shadow: 0 3px 15px #162d4024; }
 .transport { display: flex; align-items: center; gap: 12px; border-top: 1px solid #c4ced4; padding: 17px 21px; min-height: 80px; }
 .play { display: grid; place-items: center; border: 0; border-radius: 50%; background: #22384d; color: #fff; width: 39px; height: 39px; flex: none; }
 .play:hover { background: #335575; }
@@ -217,7 +215,7 @@ h1 span { color: #697a87; font-weight: 420; }
 #wiring-status:empty { display: none; }
 @media (min-width: 741px) {
   .viewer .stage { min-height: 300px; }
-  .monitor:has(#wiring-editor:not([hidden])) { min-height: calc(490px + clamp(135px, 26vh, 235px)); }
+  .workspace:not(.is-expanded) .monitor:has(#wiring-editor:not([hidden])) { min-height: calc(490px + clamp(135px, 26vh, 235px)); }
 }
 @container (max-width: 495px) {
   #live-strip { width: min(225px, calc(100% - 108px)); }
@@ -254,3 +252,31 @@ h1 span { color: #697a87; font-weight: 420; }
 }
 @media (max-width: 370px) { .document > .icon:last-child { display: none; } .mast-inner { gap: 7px; } .mast nav { padding-left: 4px; } .timeline { flex-basis: 21%; min-width: 62px; gap: 4px; } }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+
+html.workspace-window { overflow: hidden; }
+.workspace.is-expanded {
+  position: fixed; inset: 0; z-index: 5; margin: 0;
+  width: 100%; height: 100%; height: 100dvh; overflow: hidden; background: var(--chrome);
+  gap: 7px; padding: max(6px, env(safe-area-inset-top)) max(6px, env(safe-area-inset-right))
+    max(6px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left));
+  grid-template-columns: minmax(0, 1fr) clamp(225px, 25%, 380px);
+  grid-template-rows: minmax(0, 1fr);
+}
+.workspace.is-expanded > :is(.viewer, .monitor) { min-height: 0; height: auto; }
+.workspace.is-expanded .stage { flex: 1 1 0; height: auto; min-height: 0; }
+.workspace.is-expanded .monitor-body { overflow-y: auto; overscroll-behavior: contain; }
+.workspace.is-expanded #channel-list { flex: 1 0 100px; max-height: none; }
+.workspace.is-expanded #part-info { flex: 0 1 auto; max-height: 30%; overflow-y: auto; }
+@media (max-height: 600px), (max-width: 740px) {
+  .workspace.is-expanded .transport { min-height: 48px; padding: 6px 10px; }
+  .workspace.is-expanded #part-info { padding: 6px 10px; }
+  .workspace.is-expanded .monitor-head { padding: 7px 13px 3px; }
+  .workspace.is-expanded .sources { margin-bottom: 2px; }
+  .workspace.is-expanded #wiring-editor { max-height: 105px; }
+}
+@media (max-width: 740px) and (orientation: portrait) {
+  .workspace.is-expanded {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 55fr) minmax(0, 45fr);
+  }
+}

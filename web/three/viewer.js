@@ -19,7 +19,7 @@ try {
 } catch (error) {
   console.error('3D-modellen kunne ikke åbnes', error);
   $('#render-message').textContent = '3D-modellen kræver WebGL 2. Slå hardwareacceleration til i browseren, og genindlæs siden.';
-  for (const element of document.querySelectorAll('.stage-tools button, .stage-tools select, .zoom-tools button')) element.disabled = true;
+  for (const element of document.querySelectorAll('.stage-tools button:not(#fullscreen), .stage-tools select, .zoom-tools button')) element.disabled = true;
 }
 panel = mountSignalPanel({
   onSourceChange(next) {
@@ -67,19 +67,41 @@ helpButton.addEventListener('click', () => {
   helpButton.setAttribute('aria-expanded', String(opening));
 });
 const full = $('#fullscreen');
-if (document.fullscreenEnabled) {
-  full.addEventListener('click', async () => {
-    try {
-      if (document.fullscreenElement) await document.exitFullscreen();
-      else await $('#stage').requestFullscreen();
-    } catch { /* Browser policy can reject fullscreen in embedded views. */ }
-  });
-  document.addEventListener('fullscreenchange', () => {
-    const label = document.fullscreenElement ? 'Afslut fuld skærm' : 'Fuld skærm';
-    full.setAttribute('aria-label', label);
-    full.title = label;
-  });
-} else full.hidden = true;
+const workspace = $('#workspace');
+function syncFullscreen() {
+  const inWindow = document.documentElement.classList.contains('workspace-window');
+  const expanded = document.fullscreenElement === workspace || inWindow;
+  workspace.classList.toggle('is-expanded', expanded);
+  for (const element of document.querySelectorAll('.mast, .headline')) element.inert = inWindow;
+  const label = expanded ? 'Afslut fuld skærm' : 'Fuld skærm med signalmonitor';
+  full.querySelector('use').setAttribute('href', expanded ? '#i-contract' : '#i-expand');
+  full.setAttribute('aria-pressed', String(expanded));
+  full.setAttribute('aria-label', label);
+  full.title = label;
+}
+function exitWindowView() {
+  document.documentElement.classList.remove('workspace-window');
+  syncFullscreen();
+  full.focus({ preventScroll: true });
+}
+full.addEventListener('click', async () => {
+  if (document.fullscreenElement === workspace) {
+    await document.exitFullscreen();
+  } else if (document.documentElement.classList.contains('workspace-window')) {
+    exitWindowView();
+  } else {
+    if (document.fullscreenEnabled) {
+      try { await workspace.requestFullscreen(); return; }
+      catch { /* An embedded browser may only permit filling its own viewport. */ }
+    }
+    document.documentElement.classList.add('workspace-window');
+    syncFullscreen();
+  }
+});
+document.addEventListener('fullscreenchange', syncFullscreen);
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && document.documentElement.classList.contains('workspace-window')) exitWindowView();
+});
 document.addEventListener('visibilitychange', () => { previous = null; });
 function frame(now) {
   const delta = previous === null ? 0 : Math.max(0, (now - previous) / 1000);
