@@ -22,6 +22,8 @@ button:disabled { cursor: default; }
 .connection { display: grid; justify-items: end; gap: 8px; }
 .connection span { font-size: .875rem; color: var(--muted); text-align: right; }
 .connection span[data-error] { color: var(--error); }
+.usb-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.serial-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-bottom: 8px; }
 .section-links { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 12px; font-size: .875rem; font-weight: 650; }
 .section-links a { color: var(--blue); text-underline-offset: .2em; }
 .button { min-height: 44px; padding: 8px 16px; border: 1px solid var(--line); border-bottom-width: 3px; border-radius: 6px; background: var(--surface); color: var(--ink); font-weight: 650; font-size: .875rem; }
@@ -94,6 +96,8 @@ button:disabled { cursor: default; }
 .editor-panel, .upload-panel { display: flex; flex-direction: column; gap: 8px; min-width: 0; align-items: start; }
 .serial-panel { grid-column: 1 / -1; min-width: 0; }
 .field-label, .console-label h3 { font-size: .875rem; font-weight: 650; margin: 0; }
+.editor-toolbar, .editor-status { width: 100%; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; }
+.editor-status { color: var(--muted); font-size: .8125rem; font-variant-numeric: tabular-nums; }
 .console-label { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
 .console-label h3 span { color: var(--muted); font-weight: 400; margin-left: 8px; }
 .firmware-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
@@ -101,7 +105,8 @@ button:disabled { cursor: default; }
 .subtle { color: var(--muted); font-size: .875rem; }
 .subtle[data-error] { color: var(--error); }
 #sketch, .console { width: 100%; min-width: 0; margin: 0; padding: 12px; border: 1px solid var(--machine-line); border-radius: 6px; background: var(--machine); color: var(--machine-ink); font: .875rem/1.5 var(--mono); overflow: auto; }
-#sketch { min-height: 250px; max-height: 70vh; resize: vertical; tab-size: 4; }
+#sketch { min-height: 250px; height: clamp(340px, 56vh, 560px); max-height: 78vh; resize: vertical; overflow: hidden; padding: 0; }
+#sketch:focus-within { outline: 2px solid var(--focus); outline-offset: 2px; }
 .console { height: 148px; white-space: pre-wrap; overflow-wrap: anywhere; }
 #build-log { height: 202px; }
 

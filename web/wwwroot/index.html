@@ -20,7 +20,11 @@
         </nav>
       </div>
       <div class="connection">
-        <button type="button" id="connect" class="button" disabled>Tilslut Arduino</button>
+        <div class="usb-actions" role="group" aria-label="Arduino USB">
+          <button type="button" class="button button-primary" data-usb="choose" disabled>Vælg Arduino</button>
+          <button type="button" class="button" data-usb="reconnect" disabled>Forbind igen</button>
+          <button type="button" class="button" data-usb="disconnect" disabled>Afbryd</button>
+        </div>
         <span id="connection-status" role="status">Simulering aktiv</span>
       </div>
     </div>
@@ -100,11 +104,18 @@
       </div>
       <div class="firmware-body">
         <div class="editor-panel">
-          <label for="sketch" class="field-label">Arduino-kode</label>
-          <textarea id="sketch" rows="18" spellcheck="false" autocapitalize="off" autocomplete="off" wrap="off" disabled></textarea>
+          <div class="editor-toolbar">
+            <span id="sketch-label" class="field-label">Arduino-kode</span>
+            <div class="firmware-actions">
+              <button type="button" id="search-sketch" class="button" title="Ctrl+F" disabled>Søg og erstat</button>
+              <button type="button" id="download-sketch" class="button" disabled>Hent .ino</button>
+            </div>
+          </div>
+          <div id="sketch"></div>
+          <div class="editor-status"><span id="cursor-status">Linje 1, kolonne 1</span><span>C++ / Arduino</span></div>
           <div class="firmware-actions">
-            <button type="button" id="save-sketch" class="button" disabled>Gem i projektet</button>
-            <button type="button" id="compile-sketch" class="button button-primary" disabled>Kompilér</button>
+            <button type="button" id="save-sketch" class="button" title="Ctrl+S" disabled>Gem i projektet</button>
+            <button type="button" id="compile-sketch" class="button button-primary" title="Ctrl+Enter" disabled>Kompilér</button>
           </div>
         </div>
         <div class="upload-panel">
@@ -124,7 +135,15 @@
             <h3 id="serial-log-label">Serial Monitor <span>115200 baud</span></h3>
             <button type="button" id="clear-serial" class="button">Ryd log</button>
           </div>
-          <pre id="serial-log" class="console" aria-labelledby="serial-log-label" tabindex="0">Klik Tilslut Arduino for at læse skitsens udskrifter.</pre>
+          <div class="serial-toolbar">
+            <div class="usb-actions" role="group" aria-label="Serial Monitor USB">
+              <button type="button" class="button" data-usb="choose" disabled>Vælg Arduino</button>
+              <button type="button" class="button" data-usb="reconnect" disabled>Forbind igen</button>
+              <button type="button" class="button" data-usb="disconnect" disabled>Afbryd</button>
+            </div>
+            <span id="monitor-status" class="subtle">Simulering aktiv</span>
+          </div>
+          <pre id="serial-log" class="console" aria-labelledby="serial-log-label" tabindex="0">Klik Vælg Arduino for at læse skitsens udskrifter.</pre>
         </div>
       </div>
     </section>

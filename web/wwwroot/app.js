@@ -1,5 +1,9 @@
-const connectButton = document.querySelector('#connect');
+const serial = navigator.serial;
+const chooseButtons = document.querySelectorAll('[data-usb="choose"]');
+const reconnectButtons = document.querySelectorAll('[data-usb="reconnect"]');
+const disconnectButtons = document.querySelectorAll('[data-usb="disconnect"]');
 const connectionStatus = document.querySelector('#connection-status');
+const monitorStatus = document.querySelector('#monitor-status');
 const cycleButton = document.querySelector('#run');
 const slots = Array.from(document.querySelectorAll('.rack-position'));
 const diagram = document.querySelector('#diagram');
@@ -32,6 +36,9 @@ let connection = null;
 let liveTimer;
 let lastLevels = null;
 let uploading = false;
+let approvedPorts = [];
+let lastPort;
+let portListVersion = 0;
 
 function levelLabel(value) {
   if (value === undefined) return 'Intet signal';
@@ -55,10 +62,24 @@ function addEvent(message) {
 }
 
 function setConnectionStatus(message, error = false) {
-  if (connectionStatus.textContent !== message) {
-    connectionStatus.textContent = message;
+  for (const status of [connectionStatus, monitorStatus]) {
+    if (status.textContent !== message) status.textContent = message;
+    status.toggleAttribute('data-error', error);
   }
-  connectionStatus.toggleAttribute('data-error', error);
+}
+
+function reconnectPort() {
+  if (approvedPorts.includes(lastPort) && lastPort.connected !== false) return lastPort;
+  return approvedPorts.length === 1 ? approvedPorts[0] : undefined;
+}
+
+async function refreshApprovedPorts() {
+  if (!serial) return;
+  const version = ++portListVersion;
+  const ports = await serial.getPorts().catch(() => []);
+  if (version !== portListVersion) return;
+  approvedPorts = ports.filter(port => port.connected !== false);
+  updateControls();
 }
 
 function showInputs(levels, source) {
@@ -101,8 +122,10 @@ function updateControls() {
   }
   cycleButton.disabled = simulationDisabled;
   cycleButton.textContent = storedSlots.has(selectedSlot) ? `Hent fra ${selectedSlot}` : `Læg ind på ${selectedSlot}`;
-  connectButton.disabled = !('serial' in navigator) || opening || cycleRunning || uploading || Boolean(connection?.stopping);
-  connectButton.textContent = connection ? 'Afbryd Arduino' : 'Tilslut Arduino';
+  const canConnect = Boolean(serial) && !connection && !opening && !cycleRunning && !uploading;
+  for (const button of chooseButtons) button.disabled = !canConnect;
+  for (const button of reconnectButtons) button.disabled = !canConnect || !reconnectPort();
+  for (const button of disconnectButtons) button.disabled = !connection || opening || uploading || connection.stopping;
   simulationHint.textContent = connection ? 'Afbryd Arduino for at køre en lagercyklus.' : 'Vælg en plads i reolen, og kør en lagercyklus.';
   occupancyLabel.textContent = `${storedSlots.size} af ${slots.length} pladser optaget`;
 }
@@ -221,6 +244,7 @@ async function listenToArduino(link) {
     showMode(false);
     setConnectionStatus(status, error);
     addEvent('Arduino afbrudt.');
+    void refreshApprovedPorts();
   }
 }
 
@@ -246,21 +270,19 @@ export function finishUpload() {
   updateControls();
 }
 
-async function toggleArduino() {
-  if (connection) {
-    await closeArduino().catch(error => setConnectionStatus(error.message, true));
-    return;
-  }
-
+async function connectArduino(choose) {
+  if (!serial || connection || opening || uploading || cycleRunning) return;
   opening = true;
   updateControls();
   let port;
   let opened = false;
   try {
-    port = await navigator.serial.requestPort();
+    port = choose ? await serial.requestPort() : reconnectPort();
+    if (!port) return;
     await port.open({ baudRate: 115200 });
     opened = true;
     connection = { port, reader: port.readable.getReader(), stopping: false };
+    lastPort = port;
     showMode(true);
     setConnectionStatus('Venter på signaler fra Arduino…');
     addEvent('USB-forbindelse åbnet.');
@@ -276,6 +298,7 @@ async function toggleArduino() {
   } finally {
     opening = false;
     updateControls();
+    void refreshApprovedPorts();
   }
 }
 
@@ -286,12 +309,20 @@ for (const slot of slots) {
   });
 }
 cycleButton.addEventListener('click', runCycle);
-connectButton.addEventListener('click', toggleArduino);
+for (const button of chooseButtons) button.addEventListener('click', () => connectArduino(true));
+for (const button of reconnectButtons) button.addEventListener('click', () => connectArduino(false));
+for (const button of disconnectButtons) {
+  button.addEventListener('click', () => closeArduino().catch(error => setConnectionStatus(error.message, true)));
+}
 document.querySelector('#clear-serial').addEventListener('click', () => {
   serialLines.length = 0;
   serialLog.textContent = '';
 });
 showMode(false);
-if (!('serial' in navigator)) {
+if (serial) {
+  serial.addEventListener('connect', refreshApprovedPorts);
+  serial.addEventListener('disconnect', refreshApprovedPorts);
+  void refreshApprovedPorts();
+} else {
   setConnectionStatus('Brug Chrome eller Edge til Arduino via USB.');
 }

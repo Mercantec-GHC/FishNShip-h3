@@ -19,6 +19,10 @@
   --status: #115339;
   --status-wash: #e5f5ec;
   --error: #a73325;
+  --code-keyword: #d6a4ff;
+  --code-string: #a5e6ac;
+  --code-number: #ffd490;
+  --code-type: #88cbff;
   --change: #9b5b13;
   --change-wash: #fff1d8;
   --font: system-ui, sans-serif;

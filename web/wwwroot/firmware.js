@@ -1,6 +1,10 @@
 import { finishUpload, prepareUpload } from './app.js';
+import { createArduinoEditor } from './vendor/arduino-editor.js';
 
-const editor = document.querySelector('#sketch');
+const editorHost = document.querySelector('#sketch');
+const cursorStatus = document.querySelector('#cursor-status');
+const searchButton = document.querySelector('#search-sketch');
+const downloadButton = document.querySelector('#download-sketch');
 const sketchStatus = document.querySelector('#sketch-status');
 const saveButton = document.querySelector('#save-sketch');
 const compileButton = document.querySelector('#compile-sketch');
@@ -11,22 +15,24 @@ const portStatus = document.querySelector('#port-status');
 const firmwareStatus = document.querySelector('#firmware-status');
 const buildLog = document.querySelector('#build-log');
 const buildLines = [];
-let loaded = false;
+let editor;
 let enabled = false;
 let busy = false;
 let listing = false;
 let version;
 let savedCode;
 let compiledCode;
+let showingDiagnostics = false;
 
 function updateControls() {
-  editor.disabled = !loaded;
-  editor.readOnly = busy;
-  saveButton.disabled = !loaded || !enabled || busy || savedCode === editor.value;
-  compileButton.disabled = !loaded || !enabled || busy || !editor.value.trim();
+  editor?.setReadOnly(busy);
+  searchButton.disabled = !editor || busy;
+  downloadButton.disabled = !editor || busy;
+  saveButton.disabled = !editor || !enabled || busy || savedCode === editor.value;
+  compileButton.disabled = !editor || !enabled || busy || !editor.value.trim();
   refreshButton.disabled = !enabled || busy || listing;
   portSelect.disabled = !enabled || busy || listing || portSelect.options.length < 2;
-  uploadButton.disabled = !enabled || busy || listing || portSelect.options.length !== 2 || !portSelect.value || editor.value !== compiledCode;
+  uploadButton.disabled = !editor || !enabled || busy || listing || portSelect.options.length !== 2 || !portSelect.value || editor.value !== compiledCode;
   uploadButton.textContent = portSelect.value ? `Upload til ${portSelect.value}` : 'Upload firmware';
 }
 
@@ -66,18 +72,39 @@ async function loadSketch() {
     const response = await fetch('/api/firmware/sketch', { cache: 'no-store' });
     if (!response.ok) throw new Error('Demo.ino kunne ikke læses.');
     const sketch = await response.json();
-    editor.value = sketch.code;
+    editor = createArduinoEditor({
+      parent: editorHost,
+      doc: sketch.code,
+      onChange: editorChanged,
+      onCursor: (line, column) => { cursorStatus.textContent = `Linje ${line}, kolonne ${column}`; },
+      onSave: () => {
+        if (!saveButton.disabled) void saveSketch();
+        if (!enabled && !downloadButton.disabled) downloadSketch();
+      },
+      onCompile: () => { if (!compileButton.disabled) void runFirmware('compile'); },
+    });
     savedCode = editor.value;
     version = sketch.version;
     enabled = sketch.enabled;
-    loaded = true;
     sketchStatus.textContent = enabled ? 'Demo.ino er åben' : 'Lokal kladde';
     if (enabled) void refreshPorts();
-    else portStatus.textContent = 'Start siden med .NET på Arduino-computeren for at gemme, kompilere og uploade.';
+    else {
+      portStatus.textContent = 'Start siden med .NET på Arduino-computeren for at bruge uploadporten.';
+      firmwareStatus.textContent = 'Du kan hente kladden som .ino. Kompilering og upload kører på localhost.';
+    }
   } catch (error) {
     sketchStatus.textContent = error.message;
   }
   updateControls();
+}
+
+function downloadSketch() {
+  const url = URL.createObjectURL(new Blob([editor.value], { type: 'text/plain;charset=utf-8' }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'Demo.ino';
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 async function saveSketch() {
@@ -133,7 +160,11 @@ async function runFirmware(action) {
   busy = true;
   const code = editor.value;
   const port = portSelect.value;
-  if (!uploading) compiledCode = undefined;
+  if (!uploading) {
+    compiledCode = undefined;
+    editor.showDiagnostics([]);
+    showingDiagnostics = false;
+  }
   firmwareStatus.textContent = uploading ? 'Frigiver USB-porten…' : 'Kompilering i gang…';
   firmwareStatus.removeAttribute('data-error');
   buildLines.length = 0;
@@ -142,7 +173,11 @@ async function runFirmware(action) {
   try {
     if (uploading) await prepareUpload();
     const result = await readBuildStream(await api(action, { code, port }));
-    if (!uploading && result.success) compiledCode = code;
+    if (!uploading) {
+      if (result.success) compiledCode = code;
+      editor.showDiagnostics(buildLines);
+      showingDiagnostics = true;
+    }
     firmwareStatus.textContent = result.message;
     firmwareStatus.toggleAttribute('data-error', !result.success);
     appendBuildLine(result.message);
@@ -156,17 +191,23 @@ async function runFirmware(action) {
   }
 }
 
-editor.addEventListener('input', () => {
+function editorChanged() {
   sketchStatus.textContent = editor.value === savedCode ? 'Demo.ino er åben' : 'Ændringer ikke gemt';
+  if (showingDiagnostics) {
+    showingDiagnostics = false;
+    queueMicrotask(() => editor.showDiagnostics([]));
+  }
   if (compiledCode) {
     firmwareStatus.textContent = editor.value === compiledCode ? 'Kompileret og klar til upload.' : 'Kompilér ændringerne før upload.';
     firmwareStatus.removeAttribute('data-error');
   }
   updateControls();
-});
+}
 window.addEventListener('beforeunload', event => {
-  if (loaded && savedCode !== editor.value) event.preventDefault();
+  if (editor && savedCode !== editor.value) event.preventDefault();
 });
+searchButton.addEventListener('click', () => editor.search());
+downloadButton.addEventListener('click', downloadSketch);
 saveButton.addEventListener('click', saveSketch);
 refreshButton.addEventListener('click', refreshPorts);
 portSelect.addEventListener('change', updateControls);
