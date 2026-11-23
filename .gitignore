@@ -2,6 +2,3 @@ bin/
 obj/
 web/editor/node_modules/
 web/three/node_modules/
-
-api/.env
-api/vendor
