@@ -1,7 +1,7 @@
 /* Hallmark v2.0.0 | scope: app | theme: Cobalt (3/3) | signature: selectable 3×3 warehouse and digital inputs */
 /* Critique: separate simulated motion from the live readings and keep the connection state beside its control. */
 /* Hallmark · waive 39b · nine full-height rack cells in the warehouse diagram · Hver lagerplads kan vælges over hele feltet i reolen. */
-@import url("./tokens.css");
+@import url("./tokens.css?v=editor");
 
 *, *::before, *::after { box-sizing: border-box; }
 html, body { overflow-x: clip; }

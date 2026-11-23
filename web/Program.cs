@@ -6,7 +6,10 @@ builder.Services.AddSingleton<FirmwareWorkspace>();
 var app = builder.Build();
 
 app.UseDefaultFiles();
-app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = file => file.Context.Response.Headers.CacheControl = "no-cache",
+});
 
 var firmware = app.MapGroup("/api/firmware");
 firmware.MapGet("/sketch", (FirmwareWorkspace workspace) => Results.Ok(workspace.ReadSketch()));
