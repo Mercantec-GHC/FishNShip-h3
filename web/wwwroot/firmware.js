@@ -1,4 +1,4 @@
-import { finishUpload, prepareUpload } from './app.js?v=editor';
+import { finishUpload, prepareUpload } from './app.js?v=monitor';
 import { createArduinoEditor } from './vendor/arduino-editor.js';
 
 const editorHost = document.querySelector('#sketch');
