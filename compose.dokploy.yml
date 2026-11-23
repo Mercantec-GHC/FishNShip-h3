@@ -1,10 +1,23 @@
 services:
   web:
-    build: .
+    build:
+      context: .
+      target: hosted
     restart: unless-stopped
     environment:
       ASPNETCORE_URLS: http://+:3000
       Arduino__Enabled: "false"
+      Arduino__AllowHostedCompile: "true"
+    read_only: true
+    tmpfs:
+      - /tmp:size=512m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 1536m
+    cpus: 2
+    pids_limit: 128
     expose:
       - "3000"
 

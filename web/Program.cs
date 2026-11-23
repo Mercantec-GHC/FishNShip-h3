@@ -19,7 +19,12 @@ firmware.MapPost("/ports", async (HttpContext context, FirmwareWorkspace workspa
     IsLocalEditor(context) ? await workspace.ListPorts(context.RequestAborted) : Results.StatusCode(403));
 firmware.MapPost("/compile", async (HttpContext context, SketchEdit edit, FirmwareWorkspace workspace) =>
 {
-    if (!IsLocalEditor(context)) { context.Response.StatusCode = 403; return; }
+    if (!IsLocalEditor(context) &&
+        !(workspace.AllowsHostedCompile && context.Request.Headers["X-Lager-Editor"] == "1"))
+    {
+        context.Response.StatusCode = 403;
+        return;
+    }
     await workspace.Run(context, edit, upload: false);
 });
 firmware.MapPost("/upload", async (HttpContext context, SketchEdit edit, FirmwareWorkspace workspace) =>

@@ -38,7 +38,7 @@ Editoren leveres med appen. Hvis I ændrer dens CodeMirror-konfiguration, kør `
 
 ## Hosting på Dokploy
 
-Produktion bruger `compose.dokploy.yml` fra `main`. Dokploy sender trafik for `fishnship.mercantec.tech` til webservicen på containerport 3000. Den hostede side har kodeeditor og læser USB-signaler i brugerens browser. Kompilering og upload kører fra den lokale .NET-server.
+Produktion bruger `compose.dokploy.yml` fra `main`. Dokploy sender trafik for `fishnship.mercantec.tech` til webservicen på containerport 3000. Den hostede side har kodeeditor, læser USB-signaler i browseren og kompilerer til Portenta H7 (M7) med Arduino CLI i Docker-containeren. Serveren håndterer én kompilering ad gangen. Gem i projektet og upload kører fra den lokale .NET-server.
 
 ## Dokumentation
 

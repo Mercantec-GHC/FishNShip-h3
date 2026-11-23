@@ -17,6 +17,7 @@ const buildLog = document.querySelector('#build-log');
 const buildLines = [];
 let editor;
 let enabled = false;
+let compileEnabled = false;
 let busy = false;
 let listing = false;
 let version;
@@ -29,7 +30,7 @@ function updateControls() {
   searchButton.disabled = !editor || busy;
   downloadButton.disabled = !editor || busy;
   saveButton.disabled = !editor || !enabled || busy || savedCode === editor.value;
-  compileButton.disabled = !editor || !enabled || busy || !editor.value.trim();
+  compileButton.disabled = !editor || !compileEnabled || busy || !editor.value.trim();
   refreshButton.disabled = !enabled || busy || listing;
   portSelect.disabled = !enabled || busy || listing || portSelect.options.length < 2;
   uploadButton.disabled = !editor || !enabled || busy || listing || portSelect.options.length !== 2 || !portSelect.value || editor.value !== compiledCode;
@@ -86,11 +87,14 @@ async function loadSketch() {
     savedCode = editor.value;
     version = sketch.version;
     enabled = sketch.enabled;
+    compileEnabled = sketch.compileEnabled ?? enabled;
     sketchStatus.textContent = enabled ? 'Demo.ino er åben' : 'Lokal kladde';
     if (enabled) void refreshPorts();
     else {
       portStatus.textContent = 'Start siden med .NET på Arduino-computeren for at bruge uploadporten.';
-      firmwareStatus.textContent = 'Du kan hente kladden som .ino. Kompilering og upload kører på localhost.';
+      firmwareStatus.textContent = compileEnabled
+        ? 'Du kan kompilere her og hente kladden som .ino. Upload kører på localhost.'
+        : 'Du kan hente kladden som .ino. Kompilering og upload kører på localhost.';
     }
   } catch (error) {
     sketchStatus.textContent = error.message;

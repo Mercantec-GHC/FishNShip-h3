@@ -16,6 +16,7 @@ public sealed class FirmwareWorkspace(IWebHostEnvironment environment, IConfigur
     private readonly SemaphoreSlim operation = new(1, 1);
     private readonly Lock fileLock = new();
     private readonly bool enabled = configuration.GetValue("Arduino:Enabled", true);
+    private readonly bool allowHostedCompile = configuration.GetValue("Arduino:AllowHostedCompile", false);
     private readonly string sourceFile = ResolveSketch(environment, configuration);
     private readonly string cli = ResolveCli(configuration);
     private readonly string? cliConfig = ResolveConfig(configuration);
@@ -23,11 +24,12 @@ public sealed class FirmwareWorkspace(IWebHostEnvironment environment, IConfigur
 
     private string DraftFolder => Path.Combine(scratch, "Demo");
     private string BuildFolder => Path.Combine(scratch, "build");
+    public bool AllowsHostedCompile => !enabled && allowHostedCompile;
 
     public object ReadSketch()
     {
         var code = File.ReadAllText(sourceFile);
-        return new { code, version = VersionOf(code), enabled };
+        return new { code, version = VersionOf(code), enabled, compileEnabled = enabled || AllowsHostedCompile };
     }
 
     public IResult SaveSketch(SketchEdit edit)
@@ -93,11 +95,15 @@ public sealed class FirmwareWorkspace(IWebHostEnvironment environment, IConfigur
         }
 
         Task Finish(bool success, string message) => Write(new { success, message });
-        Task Log(string line) => line.Length <= 1800 ? Write(new { line }) : Task.CompletedTask;
+        var logLines = 0;
+        Task Log(string line) =>
+            line.Length <= 1800 && (!AllowsHostedCompile || Interlocked.Increment(ref logLines) <= 500)
+                ? Write(new { line }) : Task.CompletedTask;
 
-        if (!enabled || !ValidCode(edit.Code))
+        var canRun = enabled || (!upload && AllowsHostedCompile);
+        if (!canRun || !ValidCode(edit.Code))
         {
-            await Finish(false, enabled ? "Skitsen mangler eller fylder for meget." : "Start siden med .NET på Arduino-computeren for at bruge Arduino CLI.");
+            await Finish(false, canRun ? "Skitsen mangler eller fylder for meget." : "Handlingen er kun tilgængelig på localhost.");
             return;
         }
         if (!operation.Wait(0))
@@ -107,7 +113,8 @@ public sealed class FirmwareWorkspace(IWebHostEnvironment environment, IConfigur
         }
 
         using var timeout = upload ? new CancellationTokenSource() : CancellationTokenSource.CreateLinkedTokenSource(client);
-        timeout.CancelAfter(TimeSpan.FromMinutes(upload ? 2 : 8));
+        timeout.CancelAfter(TimeSpan.FromMinutes(upload ? 2 : AllowsHostedCompile ? 3 : 8));
+        DirectoryInfo? hostedBuild = null;
         try
         {
             var version = VersionOf(edit.Code!);
@@ -134,12 +141,15 @@ public sealed class FirmwareWorkspace(IWebHostEnvironment environment, IConfigur
             else
             {
                 compiledVersion = null;
-                Directory.CreateDirectory(DraftFolder);
-                await File.WriteAllTextAsync(Path.Combine(DraftFolder, "Demo.ino"), edit.Code!, timeout.Token);
+                if (AllowsHostedCompile) hostedBuild = Directory.CreateTempSubdirectory("fishnship-build-");
+                var draft = hostedBuild is null ? DraftFolder : Path.Combine(hostedBuild.FullName, "Demo");
+                var build = hostedBuild is null ? BuildFolder : Path.Combine(hostedBuild.FullName, "build");
+                Directory.CreateDirectory(draft);
+                await File.WriteAllTextAsync(Path.Combine(draft, "Demo.ino"), edit.Code!, timeout.Token);
                 await Log("Kompilerer til Arduino Portenta H7 (M7)…");
-                var result = await Invoke(["compile", "--fqbn", BuildBoard, "--jobs", "8", "--build-path", BuildFolder, "--verbose", DraftFolder], Log, timeout.Token);
-                var success = result == 0 && File.Exists(Path.Combine(BuildFolder, "Demo.ino.bin"));
-                if (success) compiledVersion = version;
+                var result = await Invoke(["compile", "--fqbn", BuildBoard, "--jobs", hostedBuild is null ? "8" : "2", "--build-path", build, "--verbose", draft], Log, timeout.Token, temporaryDirectory: hostedBuild?.FullName);
+                var success = result == 0 && File.Exists(Path.Combine(build, "Demo.ino.bin"));
+                if (success && hostedBuild is null) compiledVersion = version;
                 await Finish(success, success ? "Kompilering lykkedes." : "Kompilering mislykkedes. Se loggen ovenfor.");
             }
         }
@@ -149,7 +159,11 @@ public sealed class FirmwareWorkspace(IWebHostEnvironment environment, IConfigur
         {
             await Finish(false, "Arduino CLI kunne ikke fuldføre handlingen. " + ex.Message);
         }
-        finally { operation.Release(); }
+        finally
+        {
+            try { hostedBuild?.Delete(recursive: true); }
+            finally { operation.Release(); }
+        }
     }
 
     private async Task<string[]> DetectPorts(CancellationToken token)
@@ -168,9 +182,14 @@ public sealed class FirmwareWorkspace(IWebHostEnvironment environment, IConfigur
             .Distinct(StringComparer.Ordinal).ToArray();
     }
 
-    private async Task<int> Invoke(string[] args, Func<string, Task> log, CancellationToken token, bool readErrors = true)
+    private async Task<int> Invoke(string[] args, Func<string, Task> log, CancellationToken token, bool readErrors = true, string? temporaryDirectory = null)
     {
         using var process = new Process { StartInfo = new(cli) { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true } };
+        if (temporaryDirectory is not null)
+        {
+            process.StartInfo.Environment["TMPDIR"] = temporaryDirectory;
+            process.StartInfo.Environment["ARDUINO_BUILD_CACHE_PATH"] = Path.Combine(temporaryDirectory, "cache");
+        }
         if (cliConfig is not null)
         {
             process.StartInfo.ArgumentList.Add("--config-file");
