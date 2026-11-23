@@ -22,6 +22,16 @@ Docker Desktop kan også køre demoen med `docker compose up --build`.
 
 Arduino sender alle otte indgange samlet hvert 200 ms ved 115200 baud. Browseren læser USB-serieporten med Web Serial. Simuleringen efterligner lagerarbejdet, mens livevisningen læser Portentas digitale indgange. Encoderpulser og analoge sensorer indgår ikke i aflæsningen. Skitsen sender ingen signaler til motorudgangene.
 
+## Redigér og upload fra siden
+
+Start siden med `dotnet run --project web/LagerDemo.csproj` på den computer, hvor Portenta er tilsluttet. Åbn **Kode og upload**. **Gem i projektet** skriver til `Demo/Demo.ino`. **Kompilér** kan prøve kladden, før I gemmer. Byggets output vises løbende på siden.
+
+Tilslut én Portenta H7 via USB. Klik **Find port**, luk Serial Monitor i Arduino IDE, og vælg **Upload til COM…** efter en vellykket kompilering. Siden frigiver sin egen Serial-forbindelse under upload. Klik **Tilslut Arduino** bagefter for at se udskrifterne fra den nye skitse.
+
+Den lokale .NET-server bruger `arduino-cli` til at kompilere og bruge Portentas USB-bootloader. På Windows finder den normalt den CLI, der følger med Arduino IDE. `Arduino__CliPath`, `Arduino__CliConfig` og `Arduino__SketchPath` kan pege på en særskilt installation, konfiguration og skitse. Arduino Mbed OS Portenta Boards og Arduino_PortentaMachineControl skal være installeret i den valgte CLI-konfiguration.
+
+Docker-varianten viser simulering og USB-signaler gennem browseren. Kør .NET direkte på værtscomputeren for at gemme, kompilere og uploade.
+
 ## Dokumentation
 
 - [fischertechnik 536631, datablad og signalliste](https://fiproductmedia.azureedge.net/media/Certification%20Documents/Technical%20Datasheets/fischertechnik/TDB_536631-AUTOMATISIERTES_HOCHREGAL_24V.pdf)

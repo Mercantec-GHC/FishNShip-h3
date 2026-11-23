@@ -6,7 +6,7 @@
   <meta name="description" content="Lokal demo af fischertechnik-højlageret med lagersimulering og live indgange fra Arduino.">
   <title>Højlager · Maskindemo</title>
   <link rel="stylesheet" href="/styles.css">
-  <script type="module" src="/app.js"></script>
+  <script type="module" src="/firmware.js"></script>
 </head>
 <body>
   <header class="topbar">
@@ -14,6 +14,10 @@
       <div>
         <h1>Højlager</h1>
         <p>fischertechnik 536631 og Arduino Portenta Machine Control</p>
+        <nav class="section-links" aria-label="Visninger">
+          <a href="#signals">Signaler</a>
+          <a href="#firmware">Kode og upload</a>
+        </nav>
       </div>
       <div class="connection">
         <button type="button" id="connect" class="button" disabled>Tilslut Arduino</button>
@@ -57,12 +61,13 @@
       </div>
     </section>
 
-    <section class="inputs" aria-labelledby="inputs-heading">
+    <section class="inputs" id="signals" aria-labelledby="inputs-heading">
       <div class="section-heading">
         <div>
           <h2 id="inputs-heading">Digitale indgange</h2>
           <p id="input-source">Simulerede signaler</p>
         </div>
+        <span class="input-count" id="input-count">3 af 8 høje</span>
       </div>
       <table>
         <thead><tr><th scope="col">Kanal</th><th scope="col">Signal</th><th scope="col">Niveau</th></tr></thead>
@@ -77,12 +82,51 @@
           <tr><th scope="row">DI7</th><td>Ledig i simulering</td><td><span class="input-level">0</span></td></tr>
         </tbody>
       </table>
+      <p id="last-change" class="last-change" aria-live="polite">Seneste skift vises her.</p>
       <p id="input-hint" class="panel-note">Sensornavnene viser demoens tilslutning.</p>
     </section>
 
     <section class="events" aria-labelledby="events-heading">
       <h2 id="events-heading">Hændelser</h2>
       <ol id="events" aria-live="polite" aria-relevant="additions"><li>Simulering klar.</li></ol>
+    </section>
+    <section class="firmware" id="firmware" aria-labelledby="firmware-heading">
+      <div class="section-heading">
+        <div>
+          <h2 id="firmware-heading">Kode og upload</h2>
+          <p>Demo.ino på Arduino Portenta H7 (M7)</p>
+        </div>
+        <span id="sketch-status" role="status">Henter skitsen…</span>
+      </div>
+      <div class="firmware-body">
+        <div class="editor-panel">
+          <label for="sketch" class="field-label">Arduino-kode</label>
+          <textarea id="sketch" rows="18" spellcheck="false" autocapitalize="off" autocomplete="off" wrap="off" disabled></textarea>
+          <div class="firmware-actions">
+            <button type="button" id="save-sketch" class="button" disabled>Gem i projektet</button>
+            <button type="button" id="compile-sketch" class="button button-primary" disabled>Kompilér</button>
+          </div>
+        </div>
+        <div class="upload-panel">
+          <label for="upload-port" class="field-label">Port til upload</label>
+          <div class="firmware-actions">
+            <select id="upload-port" aria-describedby="port-status" disabled><option value="">Vælg Portenta</option></select>
+            <button type="button" id="refresh-ports" class="button" disabled>Find port</button>
+          </div>
+          <p id="port-status" class="subtle" role="status">Tilslut Arduino via USB.</p>
+          <button type="button" id="upload-sketch" class="button button-primary" disabled>Upload firmware</button>
+          <p id="firmware-status" class="subtle" role="status">Kompilér koden før upload.</p>
+          <div class="console-label"><h3 id="build-log-label">Kompilering og upload</h3></div>
+          <pre id="build-log" class="console" aria-labelledby="build-log-label" tabindex="0">Kompileringsoutput vises her.</pre>
+        </div>
+        <div class="serial-panel">
+          <div class="console-label">
+            <h3 id="serial-log-label">Serial Monitor <span>115200 baud</span></h3>
+            <button type="button" id="clear-serial" class="button">Ryd log</button>
+          </div>
+          <pre id="serial-log" class="console" aria-labelledby="serial-log-label" tabindex="0">Klik Tilslut Arduino for at læse skitsens udskrifter.</pre>
+        </div>
+      </div>
     </section>
     <noscript><p>Slå JavaScript til for at køre simuleringen eller læse signaler fra Arduino.</p></noscript>
   </main>

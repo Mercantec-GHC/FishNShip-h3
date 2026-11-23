@@ -9,10 +9,16 @@ const simulationHint = document.querySelector('#sim-hint');
 const inputSource = document.querySelector('#input-source');
 const inputHint = document.querySelector('#input-hint');
 const eventList = document.querySelector('#events');
+const inputCount = document.querySelector('#input-count');
+const lastChange = document.querySelector('#last-change');
+const serialLog = document.querySelector('#serial-log');
+const serialLines = [];
 const inputRows = Array.from(document.querySelectorAll('#input-rows tr')).map(row => ({
+  row,
   name: row.cells[1],
   simulationName: row.cells[1].textContent,
   level: row.querySelector('.input-level'),
+  highlightTimer: null,
 }));
 
 const idleLevels = [1, 0, 0, 1, 0, 1, 0, 0];
@@ -25,6 +31,12 @@ let opening = false;
 let connection = null;
 let liveTimer;
 let lastLevels = null;
+let uploading = false;
+
+function levelLabel(value) {
+  if (value === undefined) return 'Intet signal';
+  return value === 1 ? 'Høj' : 'Lav';
+}
 
 function addEvent(message) {
   const now = new Date();
@@ -51,20 +63,30 @@ function setConnectionStatus(message, error = false) {
 
 function showInputs(levels, source) {
   const changes = [];
-  inputRows.forEach(({ level }, channel) => {
+  inputRows.forEach((channelRow, channel) => {
+    const { row, level } = channelRow;
     const value = levels?.[channel];
-    const text = value === undefined ? '–' : String(value);
+    const text = value === undefined ? levelLabel(value) : `${levelLabel(value)} (${value})`;
     if (level.textContent !== text) {
       level.textContent = text;
     }
     level.toggleAttribute('data-high', value === 1);
     if (levels && lastLevels && value !== lastLevels[channel]) {
-      changes.push(`DI${channel}=${value}`);
+      changes.push(`DI${channel}: ${levelLabel(lastLevels[channel])} → ${levelLabel(value)}`);
+      row.setAttribute('data-changed', '');
+      clearTimeout(channelRow.highlightTimer);
+      channelRow.highlightTimer = setTimeout(() => row.removeAttribute('data-changed'), 2400);
+    } else if (!lastLevels || !levels) {
+      clearTimeout(channelRow.highlightTimer);
+      row.removeAttribute('data-changed');
     }
   });
   lastLevels = levels;
+  inputCount.textContent = levels ? `${levels.reduce((sum, value) => sum + value, 0)} af ${levels.length} høje` : 'Ingen aflæsning';
   if (changes.length) {
-    addEvent(`${source} · ${changes.join(', ')}`);
+    const message = changes.join(' / ');
+    lastChange.textContent = `Seneste skift: ${message}`;
+    addEvent(`${source} · ${message}`);
   }
 }
 
@@ -79,7 +101,7 @@ function updateControls() {
   }
   cycleButton.disabled = simulationDisabled;
   cycleButton.textContent = storedSlots.has(selectedSlot) ? `Hent fra ${selectedSlot}` : `Læg ind på ${selectedSlot}`;
-  connectButton.disabled = !('serial' in navigator) || opening || cycleRunning || Boolean(connection?.stopping);
+  connectButton.disabled = !('serial' in navigator) || opening || cycleRunning || uploading || Boolean(connection?.stopping);
   connectButton.textContent = connection ? 'Afbryd Arduino' : 'Tilslut Arduino';
   simulationHint.textContent = connection ? 'Afbryd Arduino for at køre en lagercyklus.' : 'Vælg en plads i reolen, og kør en lagercyklus.';
   occupancyLabel.textContent = `${storedSlots.size} af ${slots.length} pladser optaget`;
@@ -87,6 +109,7 @@ function updateControls() {
 
 function showMode(live) {
   lastLevels = null;
+  lastChange.textContent = 'Seneste skift vises her.';
   for (const row of inputRows) {
     row.name.textContent = live ? 'Portenta-indgang' : row.simulationName;
   }
@@ -147,7 +170,10 @@ function waitForFrame() {
   clearTimeout(liveTimer);
   liveTimer = setTimeout(() => {
     showInputs(null);
-    setConnectionStatus('Ingen Arduino-data. Tjek skitsen og porten.', true);
+    const message = connection?.receivedSerial
+      ? 'USB tilsluttet. Ingen nye DI0–DI7-målinger.'
+      : 'Ingen Arduino-data. Tjek skitsen og porten.';
+    setConnectionStatus(message, !connection?.receivedSerial);
   }, 2500);
 }
 
@@ -166,6 +192,16 @@ async function listenToArduino(link) {
       buffer = lines.pop();
       if (buffer.length > 1024) buffer = '';
 
+      if (lines.length) {
+        link.receivedSerial = true;
+        const follow = serialLog.scrollHeight - serialLog.scrollTop - serialLog.clientHeight < 24;
+        for (const line of lines) {
+          serialLines.push(line.trimEnd().slice(0, 1024));
+          if (serialLines.length > 150) serialLines.shift();
+        }
+        serialLog.textContent = serialLines.join('\n');
+        if (follow) serialLog.scrollTop = serialLog.scrollHeight;
+      }
       for (const line of lines) {
         const frame = framePattern.exec(line.trim());
         if (!frame) continue;
@@ -180,7 +216,7 @@ async function listenToArduino(link) {
   } finally {
     clearTimeout(liveTimer);
     link.reader.releaseLock();
-    await link.port.close().catch(() => {});
+    await link.port.close().catch(error => { link.closeError = error; });
     connection = null;
     showMode(false);
     setConnectionStatus(status, error);
@@ -188,11 +224,31 @@ async function listenToArduino(link) {
   }
 }
 
+async function closeArduino() {
+  const link = connection;
+  if (!link) return;
+  link.stopping = true;
+  updateControls();
+  await link.reader.cancel().catch(() => {});
+  await link.reading;
+  if (link.closeError) throw new Error('USB-porten kunne ikke frigives. Tilslut Arduino igen, før du uploader.');
+}
+
+export async function prepareUpload() {
+  if (opening) throw new Error('Luk eller fuldfør valg af USB-porten før upload.');
+  uploading = true;
+  updateControls();
+  await closeArduino();
+}
+
+export function finishUpload() {
+  uploading = false;
+  updateControls();
+}
+
 async function toggleArduino() {
   if (connection) {
-    connection.stopping = true;
-    updateControls();
-    await connection.reader.cancel().catch(() => {});
+    await closeArduino().catch(error => setConnectionStatus(error.message, true));
     return;
   }
 
@@ -209,7 +265,7 @@ async function toggleArduino() {
     setConnectionStatus('Venter på signaler fra Arduino…');
     addEvent('USB-forbindelse åbnet.');
     waitForFrame();
-    void listenToArduino(connection);
+    connection.reading = listenToArduino(connection);
   } catch (error) {
     if (opened) await port.close().catch(() => {});
     if (error.name === 'NotFoundError') {
@@ -231,6 +287,10 @@ for (const slot of slots) {
 }
 cycleButton.addEventListener('click', runCycle);
 connectButton.addEventListener('click', toggleArduino);
+document.querySelector('#clear-serial').addEventListener('click', () => {
+  serialLines.length = 0;
+  serialLog.textContent = '';
+});
 showMode(false);
 if (!('serial' in navigator)) {
   setConnectionStatus('Brug Chrome eller Edge til Arduino via USB.');

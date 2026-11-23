@@ -22,6 +22,8 @@ button:disabled { cursor: default; }
 .connection { display: grid; justify-items: end; gap: 8px; }
 .connection span { font-size: .875rem; color: var(--muted); text-align: right; }
 .connection span[data-error] { color: var(--error); }
+.section-links { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 12px; font-size: .875rem; font-weight: 650; }
+.section-links a { color: var(--blue); text-underline-offset: .2em; }
 .button { min-height: 44px; padding: 8px 16px; border: 1px solid var(--line); border-bottom-width: 3px; border-radius: 6px; background: var(--surface); color: var(--ink); font-weight: 650; font-size: .875rem; }
 .button:hover:not(:disabled) { border-color: var(--blue); }
 .button:active:not(:disabled) { transform: translateY(1px); }
@@ -73,12 +75,35 @@ button:disabled { cursor: default; }
 .inputs tbody th { font-weight: 600; }
 .inputs .input-level { display: inline-block; min-width: 2.25em; padding: 4px 4px; border: 1px solid var(--line); border-radius: 4px; background: var(--paper); color: var(--muted); font-family: var(--mono); text-align: center; }
 .inputs .input-level[data-high] { background: var(--status-wash); color: var(--status); }
+.inputs .input-level { min-width: 7ch; white-space: nowrap; font-weight: 650; }
+.inputs tr[data-changed] { background: var(--change-wash); }
+.inputs tr[data-changed] th { box-shadow: inset 4px 0 var(--change); }
+.input-count { font-size: .875rem; font-weight: 650; white-space: nowrap; }
+.last-change { padding: 8px 20px; border-top: 1px solid var(--line); color: var(--change); font-size: .875rem; font-weight: 650; min-height: 38px; }
 .panel-note { padding: 12px 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: .875rem; }
 .events { grid-column: 1 / -1; padding: 16px 20px; }
 .events ol { list-style: none; margin: 8px 0 0; padding: 0; color: var(--muted); font-size: .875rem; }
 .events li { display: flex; gap: 12px; padding: 8px 0; }
 .events li + li { border-top: 1px solid var(--line); }
 .events time { flex: none; color: var(--ink); font-family: var(--mono); }
+
+.firmware { grid-column: 1 / -1; min-width: 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.firmware .section-heading { border-bottom: 1px solid var(--line); }
+#sketch-status { color: var(--muted); font-size: .875rem; }
+.firmware-body { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 20px; padding: 20px; }
+.editor-panel, .upload-panel { display: flex; flex-direction: column; gap: 8px; min-width: 0; align-items: start; }
+.serial-panel { grid-column: 1 / -1; min-width: 0; }
+.field-label, .console-label h3 { font-size: .875rem; font-weight: 650; margin: 0; }
+.console-label { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.console-label h3 span { color: var(--muted); font-weight: 400; margin-left: 8px; }
+.firmware-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.firmware select { max-width: 100%; min-height: 44px; padding: 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); font: inherit; font-size: .875rem; }
+.subtle { color: var(--muted); font-size: .875rem; }
+.subtle[data-error] { color: var(--error); }
+#sketch, .console { width: 100%; min-width: 0; margin: 0; padding: 12px; border: 1px solid var(--machine-line); border-radius: 6px; background: var(--machine); color: var(--machine-ink); font: .875rem/1.5 var(--mono); overflow: auto; }
+#sketch { min-height: 250px; max-height: 70vh; resize: vertical; tab-size: 4; }
+.console { height: 148px; white-space: pre-wrap; overflow-wrap: anywhere; }
+#build-log { height: 202px; }
 
 @media (max-width: 950px) { .shell { width: calc(100% - 40px); } .workbench { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 540px) {
@@ -90,4 +115,5 @@ button:disabled { cursor: default; }
   .diagram { gap: 12px; padding: 12px; }
   .rack-position { min-height: 52px; }
 }
+@media (max-width: 760px) { .firmware-body { grid-template-columns: minmax(0, 1fr); padding: 16px; } }
 @media (prefers-reduced-motion: reduce) { .lift, .parcel { transition: none; } }
