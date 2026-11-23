@@ -22,6 +22,8 @@ Docker Desktop kan også køre editoren og overvågningen med `docker compose up
 
 Arduino sender alle otte indgange samlet hvert 200 ms ved 115200 baud. Browseren læser USB-serieporten med Web Serial. Ved afbrudt forbindelse eller ophør af målinger viser tabellen **Ingen måling**.
 
+Skitsen sender også Portentas AI0–AI2 i volt med Portenta i 0–10 V-tilstand. En ældre skitse med kun DI0–DI7 virker stadig. Spændingen på AI skal ligge inden for 0–10 V. Klemmerne mærket +24 V OUT er sensorforsyning og må aldrig forbindes direkte til AI. På fischertechnik-lagerets stik er A1 og A2 sporsensorernes nederste og øverste signal på klemme 9 og 10. Kontrollér ledningsføringen for at finde ud af, hvilken sensor der ender på hver AI-kanal.
+
 ## Redigér og upload fra siden
 
 Start siden med `dotnet run --project web/LagerDemo.csproj` på den computer, hvor Portenta er tilsluttet. Åbn **Kode og upload**. Editorens C++-visning har linjenumre, Arduino-forslag, søg og erstat og fejlmarkering fra compileren. **Gem i projektet** skriver til `Demo/Demo.ino` (`Ctrl+S`). **Kompilér** kan prøve kladden, før I gemmer (`Ctrl+Enter`). Byggets output vises løbende på siden. **Hent .ino** gemmer en kopi via browseren, også på den hostede demo.

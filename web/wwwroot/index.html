@@ -6,7 +6,7 @@
   <meta name="description" content="FishNShip-værktøjet til Arduino-kode, kompilering og overvågning af Portenta via USB.">
   <title>FishNShip · Arduino-værktøj</title>
   <link rel="stylesheet" href="/styles.css?v=monitor">
-  <script type="module" src="/firmware.js?v=monitor"></script>
+  <script type="module" src="/firmware.js?v=analog"></script>
 </head>
 <body>
   <header class="topbar">
@@ -108,6 +108,23 @@
         </tbody>
       </table>
       <p id="last-change" class="last-change">Seneste skift vises her.</p>
+    </section>
+
+    <section class="inputs" aria-labelledby="analog-heading">
+      <div class="section-heading">
+        <div>
+          <h2 id="analog-heading">Analoge indgange</h2>
+          <p>Spændingsmåling i Portentas 0–10 V-tilstand</p>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th scope="col">Kanal</th><th scope="col">Spænding</th></tr></thead>
+        <tbody id="analog-inputs">
+          <tr><th scope="row">AI0</th><td><span class="input-level">Ingen måling</span></td></tr>
+          <tr><th scope="row">AI1</th><td><span class="input-level">Ingen måling</span></td></tr>
+          <tr><th scope="row">AI2</th><td><span class="input-level">Ingen måling</span></td></tr>
+        </tbody>
+      </table>
     </section>
 
     <section class="events" aria-labelledby="events-heading">

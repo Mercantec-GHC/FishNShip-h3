@@ -1,6 +1,10 @@
 #include <Arduino_PortentaMachineControl.h>
 #include <Wire.h>
 
+// Portenta Machine Control 0–10 V divider and 16-bit ADC scaling.
+constexpr float voltsPerCount = 3.0f / 65535.0f / 0.28057f;
+bool analogReady = false;
+
 constexpr uint8_t digitalInputPins[] = {
     DIN_READ_CH_PIN_00,
     DIN_READ_CH_PIN_01,
@@ -18,6 +22,11 @@ void setup()
 
     Wire.begin();
     MachineControl_DigitalInputs.begin();
+    analogReady = MachineControl_AnalogIn.begin(SensorType::V_0_10);
+    if (!analogReady)
+    {
+        Serial.println("Analog input initialization failed");
+    }
 
     Serial.println("Monitoring digital inputs DI0-DI7");
 }
@@ -38,6 +47,16 @@ void loop()
         Serial.print(channel);
         Serial.print('=');
         Serial.print(state);
+    }
+    if (analogReady)
+    {
+        for (int channel = 0; channel < 3; ++channel)
+        {
+            Serial.print("  AI");
+            Serial.print(channel);
+            Serial.print('=');
+            Serial.print(MachineControl_AnalogIn.read(channel) * voltsPerCount, 3);
+        }
     }
     Serial.println();
 

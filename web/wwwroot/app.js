@@ -8,6 +8,8 @@ const inputSource = document.querySelector('#input-source');
 const eventList = document.querySelector('#events');
 const emptyEvents = document.querySelector('#events-empty');
 const inputCount = document.querySelector('#input-count');
+const analogLevels = document.querySelectorAll('#analog-inputs .input-level');
+const voltageFormat = new Intl.NumberFormat('da-DK', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
 const lastChange = document.querySelector('#last-change');
 const serialLog = document.querySelector('#serial-log');
 const serialLines = [];
@@ -18,7 +20,7 @@ const inputRows = Array.from(document.querySelectorAll('#input-rows tr')).map(ro
 }));
 
 const timeFormat = new Intl.DateTimeFormat('da-DK', { timeStyle: 'medium' });
-const framePattern = /^DI0=([01])\s+DI1=([01])\s+DI2=([01])\s+DI3=([01])\s+DI4=([01])\s+DI5=([01])\s+DI6=([01])\s+DI7=([01])$/;
+const framePattern = /^DI0=([01])\s+DI1=([01])\s+DI2=([01])\s+DI3=([01])\s+DI4=([01])\s+DI5=([01])\s+DI6=([01])\s+DI7=([01])(?:\s+AI0=(\d+\.\d+)\s+AI1=(\d+\.\d+)\s+AI2=(\d+\.\d+))?$/;
 let opening = false;
 let connection = null;
 let liveTimer;
@@ -70,7 +72,11 @@ async function refreshApprovedPorts() {
   updateControls();
 }
 
-function showInputs(levels) {
+function showInputs(levels, voltages = []) {
+  analogLevels.forEach((level, channel) => {
+    const value = voltages[channel];
+    level.textContent = Number.isFinite(value) ? voltageFormat.format(value) + ' V' : 'Ingen måling';
+  });
   const changes = [];
   inputRows.forEach((channelRow, channel) => {
     const { row, level } = channelRow;
@@ -153,7 +159,7 @@ async function listenToArduino(link) {
       for (const line of lines) {
         const frame = framePattern.exec(line.trim());
         if (!frame) continue;
-        showInputs(frame.slice(1).map(Number));
+        showInputs(frame.slice(1, 9).map(Number), frame.slice(9).map(Number));
         inputSource.textContent = 'Live fra Arduino via USB';
         setConnectionStatus('Arduino tilsluttet');
         waitForFrame();
@@ -209,7 +215,7 @@ async function connectArduino(choose) {
     opened = true;
     connection = { port, reader: port.readable.getReader(), stopping: false };
     lastPort = port;
-    resetReadings('Venter på DI0–DI7 fra Arduino…');
+    resetReadings('Venter på målinger fra Arduino…');
     setConnectionStatus('Venter på signaler fra Arduino…');
     addEvent('USB-forbindelse åbnet.');
     waitForFrame();
