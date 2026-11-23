@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="da">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Lokal demo af fischertechnik-højlageret med lagersimulering og live indgange fra Arduino.">
+  <title>Højlager · Maskindemo</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="shell header-content">
+      <div>
+        <h1>Højlager</h1>
+        <p>fischertechnik 536631 og Arduino Portenta Machine Control</p>
+      </div>
+      <div class="connection">
+        <button type="button" id="connect" class="button" disabled>Tilslut Arduino</button>
+        <span id="connection-status" role="status">Simulering aktiv</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="shell workbench">
+    <section class="machine" aria-labelledby="simulation-heading">
+      <div class="section-heading">
+        <div>
+          <h2 id="simulation-heading">Lagersimulering</h2>
+          <p id="sim-hint">Vælg en plads i reolen, og kør en lagercyklus.</p>
+        </div>
+        <button type="button" class="button button-primary" id="run" disabled>Læg ind på A3</button>
+      </div>
+      <div class="diagram" id="diagram" data-phase="idle">
+        <div class="rack">
+          <span class="axis-label">Reol</span>
+          <div class="rack-grid" aria-label="Lagerpladser">
+            <button type="button" class="rack-position" data-position="A3" aria-pressed="true" disabled>A3</button>
+            <button type="button" class="rack-position" data-position="B3" aria-pressed="false" disabled>B3</button>
+            <button type="button" class="rack-position" data-position="C3" aria-pressed="false" disabled>C3</button>
+            <button type="button" class="rack-position" data-position="A2" aria-pressed="false" disabled>A2</button>
+            <button type="button" class="rack-position" data-position="B2" aria-pressed="false" disabled>B2</button>
+            <button type="button" class="rack-position" data-position="C2" aria-pressed="false" disabled>C2</button>
+            <button type="button" class="rack-position" data-position="A1" aria-pressed="false" disabled>A1</button>
+            <button type="button" class="rack-position" data-position="B1" aria-pressed="false" disabled>B1</button>
+            <button type="button" class="rack-position" data-position="C1" aria-pressed="false" disabled>C1</button>
+          </div>
+        </div>
+        <div class="handling">
+          <div class="crane"><span class="axis-label">Reolkran</span><div class="lift" aria-hidden="true"></div></div>
+          <div class="conveyor"><span class="axis-label">Transportbånd</span><div class="belt" aria-hidden="true"><span class="parcel"></span></div></div>
+        </div>
+      </div>
+      <div class="machine-status">
+        <p id="phase" role="status">Klar ved referencepositionen</p>
+        <span id="occupancy">0 af 9 pladser optaget</span>
+      </div>
+    </section>
+
+    <section class="inputs" aria-labelledby="inputs-heading">
+      <div class="section-heading">
+        <div>
+          <h2 id="inputs-heading">Digitale indgange</h2>
+          <p id="input-source">Simulerede signaler</p>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th scope="col">Kanal</th><th scope="col">Signal</th><th scope="col">Niveau</th></tr></thead>
+        <tbody id="input-rows">
+          <tr><th scope="row">DI0</th><td>Vandret reference</td><td><span class="input-level" data-high>1</span></td></tr>
+          <tr><th scope="row">DI1</th><td>Indre lysbarriere</td><td><span class="input-level">0</span></td></tr>
+          <tr><th scope="row">DI2</th><td>Ydre lysbarriere</td><td><span class="input-level">0</span></td></tr>
+          <tr><th scope="row">DI3</th><td>Lodret reference</td><td><span class="input-level" data-high>1</span></td></tr>
+          <tr><th scope="row">DI4</th><td>Arm fremme</td><td><span class="input-level">0</span></td></tr>
+          <tr><th scope="row">DI5</th><td>Arm tilbage</td><td><span class="input-level" data-high>1</span></td></tr>
+          <tr><th scope="row">DI6</th><td>Ledig i simulering</td><td><span class="input-level">0</span></td></tr>
+          <tr><th scope="row">DI7</th><td>Ledig i simulering</td><td><span class="input-level">0</span></td></tr>
+        </tbody>
+      </table>
+      <p id="input-hint" class="panel-note">Sensornavnene viser demoens tilslutning.</p>
+    </section>
+
+    <section class="events" aria-labelledby="events-heading">
+      <h2 id="events-heading">Hændelser</h2>
+      <ol id="events" aria-live="polite" aria-relevant="additions"><li>Simulering klar.</li></ol>
+    </section>
+    <noscript><p>Slå JavaScript til for at køre simuleringen eller læse signaler fra Arduino.</p></noscript>
+  </main>
+</body>
+</html>

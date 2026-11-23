@@ -1,0 +1,26 @@
+:root {
+  --paper: #f4f6fa;
+  --surface: #fff;
+  --ink: #152238;
+  --muted: #526278;
+  --line: #d5deea;
+  --blue: #144cca;
+  --blue-wash: #ecf2ff;
+  --focus: #2859ec;
+  --white: #fff;
+  --machine: #14223a;
+  --machine-plate: #1c2e4c;
+  --machine-grid: #243653;
+  --machine-line: #466084;
+  --machine-ink: #e9f1ff;
+  --machine-muted: #bccde5;
+  --machine-active: #7ca7ff;
+  --machine-occupied: #315393;
+  --status: #115339;
+  --status-wash: #e5f5ec;
+  --error: #a73325;
+  --font: system-ui, sans-serif;
+  --mono: ui-monospace, Consolas, monospace;
+  --radius: 8px;
+  --shell: 1280px;
+}
