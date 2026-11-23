@@ -5,6 +5,7 @@ const editorHost = document.querySelector('#sketch');
 const cursorStatus = document.querySelector('#cursor-status');
 const searchButton = document.querySelector('#search-sketch');
 const downloadButton = document.querySelector('#download-sketch');
+const firmwareDownload = document.querySelector('#download-firmware');
 const sketchStatus = document.querySelector('#sketch-status');
 const saveButton = document.querySelector('#save-sketch');
 const compileButton = document.querySelector('#compile-sketch');
@@ -32,6 +33,7 @@ let listing = false;
 let version;
 let savedCode;
 let compiledCode;
+let firmwarePackage;
 let showingDiagnostics = false;
 let pairWindow;
 let pairRequestId;
@@ -51,6 +53,7 @@ function updateControls() {
   editor?.setReadOnly(busy);
   searchButton.disabled = !editor || busy;
   downloadButton.disabled = !editor || busy;
+  firmwareDownload.disabled = !firmwarePackage || busy || editor?.value !== compiledCode;
   saveButton.disabled = !editor || !enabled || busy || savedCode === editor.value;
   compileButton.disabled = !editor || !compileEnabled || busy || !editor.value.trim();
   const uploadAvailable = enabled || Boolean(bridgeKey);
@@ -193,15 +196,17 @@ async function loadSketch() {
     sketchStatus.textContent = enabled ? 'Demo.ino er åben' : 'Lokal kladde';
     document.querySelector('#local-bridge').hidden = !enabled;
     document.querySelector('#hosted-bridge').hidden = enabled || location.protocol !== 'https:';
+    document.querySelector('#firmware-package').hidden = enabled || !compileEnabled;
     if (hosted) {
       try { bridgeKey = sessionStorage.getItem(bridgeStorageKey) ?? ''; }
       catch { bridgeKey = ''; }
     }
     if (enabled) void refreshPorts();
     else {
-      portStatus.textContent = 'Klik Find port for at finde Portenta på denne computer.';
+      document.querySelector('#upload-port-label').textContent = 'Port til upload via localhost (valgfrit)';
+      portStatus.textContent = 'Find port bruger det lokale værktøj.';
       firmwareStatus.textContent = compileEnabled
-        ? 'Når porten er valgt, kan du bygge og uploade i samme trin.'
+        ? 'Kompilér koden for at hente firmwarepakken.'
         : 'Du kan hente kladden som .ino. Kompilering og upload kører på localhost.';
     }
   } catch (error) {
@@ -210,13 +215,17 @@ async function loadSketch() {
   updateControls();
 }
 
-function downloadSketch() {
-  const url = URL.createObjectURL(new Blob([editor.value], { type: 'text/plain;charset=utf-8' }));
+function downloadFile(content, type, filename) {
+  const url = URL.createObjectURL(new Blob([content], { type }));
   const link = document.createElement('a');
   link.href = url;
-  link.download = 'Demo.ino';
+  link.download = filename;
   link.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function downloadSketch() {
+  downloadFile(editor.value, 'text/plain;charset=utf-8', 'Demo.ino');
 }
 
 async function saveSketch() {
@@ -274,6 +283,7 @@ async function runFirmware(action) {
   const port = portSelect.value;
   if (!uploading) {
     compiledCode = undefined;
+    firmwarePackage = undefined;
     editor.showDiagnostics([]);
     showingDiagnostics = false;
   }
@@ -296,7 +306,10 @@ async function runFirmware(action) {
     }
     const result = await readBuildStream(await api(action, { code, port }));
     if (!uploading) {
-      if (result.success) compiledCode = code;
+      if (result.success) {
+        compiledCode = code;
+        firmwarePackage = result.firmwarePackage;
+      }
       editor.showDiagnostics(buildLines);
       showingDiagnostics = true;
     }
@@ -335,6 +348,10 @@ bridgeForm.addEventListener('submit', event => {
 });
 showBridgeKey.addEventListener('click', revealBridgeKey);
 downloadButton.addEventListener('click', downloadSketch);
+firmwareDownload.addEventListener('click', () => {
+  const bytes = Uint8Array.from(atob(firmwarePackage), character => character.charCodeAt(0));
+  downloadFile(bytes, 'application/zip', 'FishNShip-Portenta-M7.zip');
+});
 saveButton.addEventListener('click', saveSketch);
 refreshButton.addEventListener('click', findPorts);
 portSelect.addEventListener('change', updateControls);

@@ -5,4 +5,7 @@
     <Nullable>enable</Nullable>
     <DefaultItemExcludes>$(DefaultItemExcludes);editor/**;three/**</DefaultItemExcludes>
   </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Firmware/Upload.cmd" LogicalName="FishNShip.Upload.cmd" />
+  </ItemGroup>
 </Project>

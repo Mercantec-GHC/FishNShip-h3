@@ -42,6 +42,10 @@ Produktion bruger `compose.dokploy.yml` fra `main`. Dokploy sender trafik for `f
 
 ### Upload fra den hostede side
 
+**Uden localhost på Windows:** Kompilér på FishNShip, klik **Hent firmwarepakke**, og pak hele ZIP-filen ud. Kør `Upload.cmd` på computeren med Portenta, og bekræft den fundne COM-port. Upload kræver Arduino CLI og den installerede Mbed Portenta-boardpakke. Pakken indeholder den allerede kompilerede firmware, så Arduino-computeren slipper for at bygge skitsen igen.
+
+**Valgfri forbindelse via localhost:**
+
 1. Start den opdaterede .NET-app på Arduino-computeren.
 2. Åbn [FishNShip](https://fishnship.mercantec.tech/#firmware) i Chrome eller Edge på samme computer. Klik **Find port**, og godkend forbindelsen i det lokale vindue. Hvis pop op-vinduet er blokeret, kan I bruge **Forbind med uploadkode** og hente koden på [localhost:5080](http://localhost:5080/#firmware).
 3. Klik **Byg og upload til COM…**. Tillad lokal adgang, hvis browseren spørger. Browseren sender koden direkte til værktøjet på localhost, som bygger og uploader via Arduino CLI. Forbindelsen gemmes i fanen, og uploadkoden gælder indtil den lokale server genstartes.

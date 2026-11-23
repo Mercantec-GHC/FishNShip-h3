@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Diagnostics;
+using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -11,6 +12,7 @@ public sealed class FirmwareWorkspace(IWebHostEnvironment environment, IConfigur
     private const string Board = "arduino:mbed_portenta:envie_m7";
     private const string BuildBoard = Board + ":split=50_50,target_core=cm7,security=none";
     private const int MaxSketchLength = 128 * 1024;
+    private const int MaxFirmwareLength = 786432;
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
     private readonly string scratch = Path.Combine(Path.GetTempPath(), "lager-firmware-" + Guid.NewGuid().ToString("N"));
     private readonly SemaphoreSlim operation = new(1, 1);
@@ -95,7 +97,8 @@ public sealed class FirmwareWorkspace(IWebHostEnvironment environment, IConfigur
             finally { writeLock.Release(); }
         }
 
-        Task Finish(bool success, string message) => Write(new { success, message });
+        Task Finish(bool success, string message, byte[]? firmwarePackage = null) =>
+            Write(new { success, message, firmwarePackage });
         var logLines = 0;
         Task Log(string line) =>
             line.Length <= 1800 && (!AllowsHostedCompile || Interlocked.Increment(ref logLines) <= 500)
@@ -149,9 +152,11 @@ public sealed class FirmwareWorkspace(IWebHostEnvironment environment, IConfigur
                 await File.WriteAllTextAsync(Path.Combine(draft, "Demo.ino"), edit.Code!, timeout.Token);
                 await Log("Kompilerer til Arduino Portenta H7 (M7)…");
                 var result = await Invoke(["compile", "--fqbn", BuildBoard, "--jobs", hostedBuild is null ? "8" : "2", "--build-path", build, "--verbose", draft], Log, timeout.Token, temporaryDirectory: hostedBuild?.FullName);
-                var success = result == 0 && File.Exists(Path.Combine(build, "Demo.ino.bin"));
+                var binary = new FileInfo(Path.Combine(build, "Demo.ino.bin"));
+                var success = result == 0 && binary.Exists && binary.Length is > 0 and <= MaxFirmwareLength;
                 if (success && hostedBuild is null) compiledVersion = version;
-                await Finish(success, success ? "Kompilering lykkedes." : "Kompilering mislykkedes. Se loggen ovenfor.");
+                var package = success && hostedBuild is not null ? CreateFirmwarePackage(binary.FullName, edit.Code!) : null;
+                await Finish(success, success ? "Kompilering lykkedes." : "Kompilering mislykkedes. Se loggen ovenfor.", package);
             }
         }
         catch (Win32Exception) { await Finish(false, "Arduino CLI blev ikke fundet. Installér Arduino IDE eller sæt Arduino__CliPath."); }
@@ -165,6 +170,24 @@ public sealed class FirmwareWorkspace(IWebHostEnvironment environment, IConfigur
             try { hostedBuild?.Delete(recursive: true); }
             finally { operation.Release(); }
         }
+    }
+
+    private static byte[] CreateFirmwarePackage(string binary, string code)
+    {
+        using var output = new MemoryStream();
+        using (var zip = new ZipArchive(output, ZipArchiveMode.Create, leaveOpen: true))
+        {
+            zip.CreateEntryFromFile(binary, "firmware/Demo.ino.bin");
+            using (var sketch = new StreamWriter(zip.CreateEntry("Demo/Demo.ino").Open()))
+                sketch.Write(code);
+
+            using var uploader = typeof(FirmwareWorkspace).Assembly.GetManifestResourceStream("FishNShip.Upload.cmd")
+                ?? throw new InvalidOperationException("Upload.cmd mangler i serverens build.");
+            using var template = new StreamReader(uploader);
+            using var script = new StreamWriter(zip.CreateEntry("Upload.cmd").Open());
+            script.Write(template.ReadToEnd().ReplaceLineEndings("\r\n"));
+        }
+        return output.ToArray();
     }
 
     private async Task<string[]> DetectPorts(CancellationToken token)
