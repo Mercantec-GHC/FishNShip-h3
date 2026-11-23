@@ -7,9 +7,8 @@ services:
       Arduino__Enabled: "false"
     expose:
       - "3000"
-    networks:
-      - dokploy-network
 
 networks:
-  dokploy-network:
+  default:
+    name: dokploy-network
     external: true
