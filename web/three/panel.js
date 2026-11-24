@@ -118,6 +118,12 @@ export function mountSignalPanel({ onSourceChange, onSelectSignal, onDigitalStat
   const connect = find('connect');
   const reconnect = find('reconnect');
   const disconnect = find('disconnect');
+  for (const button of find('conveyor-actions').children) find('part-conveyor').append(button.cloneNode(true));
+  const beltButtons = [...document.querySelectorAll('[data-belt]')];
+  for (const button of beltButtons) button.addEventListener('click', async () => {
+    try { await monitor.sendBelt(button.dataset.belt); }
+    catch { setText(usbMessage, 'Could not send the conveyor command. Check the USB connection.'); }
+  });
   const wiringTools = find('wiring-tools');
   const toggleWiring = find('toggle-wiring');
   const wiringEditor = find('wiring-editor');
@@ -146,6 +152,8 @@ export function mountSignalPanel({ onSourceChange, onSelectSignal, onDigitalStat
     if (source === 'demo') {
       for (const { id } of signals) levels[id] = Number(demo.signals[id]);
     } else {
+      levels.Q1 = usb.frame?.belt?.[0] ?? null;
+      levels.Q2 = usb.frame?.belt?.[1] ?? null;
       for (const { id, index } of portentaGroups.inputs) levels[id] = usb.frame?.digital[index] ?? null;
     }
     const key = source + Object.values(levels).map(value => value ?? '-').join('');
@@ -362,6 +370,12 @@ export function mountSignalPanel({ onSourceChange, onSelectSignal, onDigitalStat
     }
     statusLamp.dataset.mode = usb.phase === 'live' ? 'live' : 'idle';
     setText(status, usb.phase === 'live' ? 'Portenta readings' : 'No current readings');
+    const belt = usb.frame?.belt;
+    const moving = belt?.some(Boolean);
+    const description = belt ? (belt[0] ? 'Q1 · Forward' : belt[1] ? 'Q2 · Reverse' : 'Stopped') :
+      usb.frame ? 'Upload the conveyor control sketch to enable the outputs.' : 'Waiting for USB output readings.';
+    setText(find('belt-state'), description);
+    for (const button of beltButtons) button.disabled = !belt || (moving && button.dataset.belt !== 'STOP');
     setText(usbMessage, usb.message);
     connect.hidden = !usb.canChoose;
     reconnect.hidden = !usb.canReconnect;

@@ -53,6 +53,7 @@
         <div class="transport hardware-caption" id="hardware-caption" hidden><svg class="icon" aria-hidden="true"><use href="#i-usb"/></svg><div><span class="field-label">USB live</span><strong>Digital inputs</strong></div><small>Active sensors glow green on the model. Select the corresponding Portenta channel under <b>Map inputs</b>.</small></div>
         <section id="part-info" aria-label="Selected part" hidden>
           <div class="part-copy"><div class="part-heading"><strong id="part-name"></strong><span id="part-state"></span></div><p id="part-description"></p><div id="part-signals"></div></div>
+          <div class="usb-actions" id="part-conveyor" hidden></div>
           <div class="part-actions"><button type="button" id="focus-part">Zoom to part</button><button type="button" id="map-part" hidden>Map part</button><button type="button" id="close-part" aria-label="Close part details" title="Close part details">×</button></div>
         </section>
       </section>
@@ -60,7 +61,10 @@
         <div class="monitor-head"><svg class="icon" aria-hidden="true"><use href="#i-wave"/></svg><h2 id="monitor-title">Signal monitor</h2></div>
         <div class="sources" role="group" aria-label="Signal source"><button data-source="demo" aria-pressed="true" type="button"><svg class="icon" aria-hidden="true"><use href="#i-play"/></svg>Demo</button><button data-source="usb" aria-pressed="false" type="button"><svg class="icon" aria-hidden="true"><use href="#i-usb"/></svg>USB live</button></div>
         <div class="monitor-body">
-          <div id="usb-setup" hidden><p id="usb-message" role="status"></p><div class="usb-actions"><button id="connect" type="button">Select Arduino</button><button id="reconnect" type="button">Reconnect</button><button id="disconnect" type="button">Disconnect</button></div></div>
+          <div id="usb-setup" hidden><p id="usb-message" role="status"></p><div class="usb-actions"><button id="connect" type="button">Select Arduino</button><button id="reconnect" type="button">Reconnect</button><button id="disconnect" type="button">Disconnect</button></div>
+            <section aria-label="Conveyor control"><strong>Conveyor</strong><p id="belt-state" role="status"></p>
+              <div class="usb-actions" id="conveyor-actions"><button type="button" data-belt="Q1" disabled>Q1 · Forward 1 s</button><button type="button" data-belt="Q2" disabled>Q2 · Reverse 1 s</button><button type="button" data-belt="STOP" disabled>Stop</button></div>
+            </section></div>
           <div class="tabs" role="group" aria-label="Signal group"><button data-tab="inputs" type="button" aria-pressed="true">Inputs</button><button data-tab="outputs" type="button" aria-pressed="false">Outputs</button></div>
           <div id="wiring-tools" hidden><button id="toggle-wiring" type="button" aria-expanded="false" aria-controls="wiring-editor">Map inputs</button><div id="wiring-editor" hidden><p>Choose the warehouse terminal and the raw level that indicates activation. On the standard warehouse, I2 and I3 go low when the beam is interrupted. Settings are saved in this browser.</p><div id="wiring-fields"></div><p id="wiring-status" role="status"></p></div></div>
           <div id="channel-list" aria-label="Signal values"></div>

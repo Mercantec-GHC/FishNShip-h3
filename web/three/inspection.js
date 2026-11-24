@@ -108,6 +108,7 @@ export function mountInspection({ warehouse, canvas, camera, invalidate, focusPa
   function updateDetails(part) {
     const id = selectedChannel;
     info.hidden = !part && !id;
+    q('part-conveyor').hidden = state.source !== 'usb' || !['belt', 'belt-motor'].includes(part?.id);
     if (info.hidden) return;
     q('part-name').textContent = part?.name || 'Portenta ' + id;
     q('part-description').textContent = part ? descriptions[part.id] :
@@ -177,7 +178,7 @@ export function mountInspection({ warehouse, canvas, camera, invalidate, focusPa
         button.title = hint;
         button.setAttribute('aria-label', hint);
       }
-      const count = digitalIds.some(id => state.mapping[id]) ? activeParts.size + ' active' : high + ' high';
+      const count = digitalIds.some(id => state.mapping[id]) ? (activeParts.size - Number(activeParts.has('belt-motor'))) + ' active' : high + ' high';
       q('digital-count').textContent = measured ? count : 'No reading';
     }
     currentLabels = [];
@@ -203,10 +204,10 @@ export function mountInspection({ warehouse, canvas, camera, invalidate, focusPa
       item.button.dataset.state = item.dot.dataset.state = item.line.dataset.state = item.halo.dataset.state = mode;
       item.button.toggleAttribute('data-selected', selected);
       const channels = currents || recent?.channels;
-      const code = channels ? [...new Set(channels.map(raw => usb ? state.mapping[raw] : raw))].join(' + ') : selected ? selectedChannel : null;
+      const code = channels ? [...new Set(channels.map(raw => usb ? (state.mapping[raw] ?? raw) : raw))].join(' + ') : selected ? selectedChannel : null;
       const text = (code ? code + ' · ' : '') + item.part.name;
       if (item.caption.textContent !== text) item.caption.textContent = text;
-      const action = currents ? (isBarrier(id) ? 'Beam interrupted' : 'Active') : recent ? 'Recently active' : '';
+      const action = currents && id === 'belt-motor' ? (currents.includes('Q1') ? 'Forward' : 'Reverse') : currents ? (isBarrier(id) ? 'Beam interrupted' : 'Active') : recent ? 'Recently active' : '';
       item.status.hidden = !action;
       if (item.status.textContent !== action) item.status.textContent = action;
       item.button.title = [text, action, usb ? channels?.join(' + ') : ''].filter(Boolean).join(' · ');
@@ -232,6 +233,8 @@ export function mountInspection({ warehouse, canvas, camera, invalidate, focusPa
       if (!active.has(partId)) active.set(partId, []);
       active.get(partId).push(channel);
     }
+
+    if (usb && (next.levels.Q1 || next.levels.Q2)) active.set('belt-motor', [next.levels.Q1 ? 'Q1' : 'Q2']);
 
     // A brief measured USB pulse can start and end before the next paint.
     // Extinguish the live light immediately; keep a separately labelled trace.

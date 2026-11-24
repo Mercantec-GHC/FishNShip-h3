@@ -16,11 +16,59 @@ constexpr uint8_t digitalInputPins[] = {
     DIN_READ_CH_PIN_07,
 };
 
+// One command jogs one direction for at most one second.
+uint8_t direction = 0;
+uint32_t changedAt = 0;
+uint32_t lastReport = 0;
+
+void stopConveyor()
+{
+    MachineControl_DigitalOutputs.write(0, LOW);
+    MachineControl_DigitalOutputs.write(1, LOW);
+    direction = 0;
+    changedAt = millis();
+}
+
+void serviceConveyor()
+{
+    if (direction && millis() - changedAt >= 1000) stopConveyor();
+
+    static char line[12];
+    static size_t length = 0;
+    for (int budget = 32; budget > 0 && Serial.available(); --budget)
+    {
+        const char c = Serial.read();
+        if (c != '\n')
+        {
+            if (length < sizeof(line)) line[length++] = c;
+            continue;
+        }
+        if (length < sizeof(line))
+        {
+            line[length] = 0;
+            if (!strcmp(line, "BELT STOP")) stopConveyor();
+            else if (!direction && millis() - changedAt >= 250)
+            {
+                const bool forward = !strcmp(line, "BELT Q1");
+                if (forward || !strcmp(line, "BELT Q2"))
+                {
+                    direction = forward ? 1 : 2;
+                    MachineControl_DigitalOutputs.write(direction - 1, HIGH);
+                    changedAt = millis();
+                }
+            }
+        }
+        length = 0;
+    }
+}
+
 void setup()
 {
     Serial.begin(115200);
 
     Wire.begin();
+    MachineControl_DigitalOutputs.begin();
+    stopConveyor();
     MachineControl_DigitalInputs.begin();
     analogReady = MachineControl_AnalogIn.begin(SensorType::V_0_10);
     if (!analogReady)
@@ -33,6 +81,9 @@ void setup()
 
 void loop()
 {
+    serviceConveyor();
+    if (millis() - lastReport < 200) return;
+    lastReport = millis();
     const uint32_t inputs = MachineControl_DigitalInputs.readAll();
 
     for (size_t channel = 0; channel < sizeof(digitalInputPins) / sizeof(digitalInputPins[0]); ++channel)
@@ -67,7 +118,8 @@ void loop()
             Serial.print(counts[channel]);
         }
     }
-    Serial.println();
-
-    delay(200);
+    Serial.print("  Q1=");
+    Serial.print(direction == 1 ? 1 : 0);
+    Serial.print("  Q2=");
+    Serial.println(direction == 2 ? 1 : 0);
 }

@@ -40,6 +40,12 @@ Open the [3D model](https://fishnship.mercantec.tech/three). Drag to rotate, scr
 
 Under **USB live**, connect the Portenta to see raw digital and analog readings. In **Map inputs**, match each digital channel to its physical warehouse terminal and active level. With the standard wiring, the inner and outer light barriers go low when interrupted. An active mapped sensor glows green on the model.
 
+### Control the conveyor over USB
+
+Upload the included Demo/Demo.ino sketch and open **USB live** on the 3D page. Connect the Portenta and use **Q1 · Forward 1 s** or **Q2 · Reverse 1 s** to jog the physical conveyor. **Stop** ends the jog early. These controls assume digital output 0 is wired to Q1 and output 1 to Q2.
+
+The sketch starts with both outputs low, energizes one direction at a time and stops each jog locally after one second, including if the USB connection drops. It requires 250 ms at rest before accepting another jog. Input readings continue during motion. The panel and model show the output state reported by the sketch. Actual belt movement depends on the wiring and motor supply.
+
 ## Rebuild the frontend
 
 After changing the CodeMirror editor, run `npm ci --prefix web/editor` and `npm run build --prefix web/editor` to regenerate its bundle and license notices. For model or animation changes, run `npm ci --prefix web/three` and `npm run build --prefix web/three`. Both bundles ship with the app and Docker image.

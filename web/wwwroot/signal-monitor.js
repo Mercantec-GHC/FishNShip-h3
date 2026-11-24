@@ -7,7 +7,9 @@ export function parseSignalFrame(line) {
   if (!digital) return null;
   // The sketch can append its own telemetry after the eight digital levels.
   const analog = analogPattern.exec(text.slice(digital[0].length));
+  const belt = /\sQ1=([01])\s+Q2=([01])$/.exec(text);
   return {
+    belt: belt ? [Number(belt[1]), Number(belt[2])] : null,
     digital: digital.slice(1).map(Number),
     analog: analog ? analog.slice(1, 4).map(Number) : [],
     adc: analog?.[4] === undefined ? [] : analog.slice(4, 7).map(Number),
@@ -15,7 +17,7 @@ export function parseSignalFrame(line) {
   };
 }
 
-// Both pages use the same read-only Web Serial connection and frame timeout.
+// Both pages use the same Web Serial connection and frame timeout.
 export function createSignalMonitor({ onLines } = {}) {
   const serial = navigator.serial;
   const listeners = new Set();
@@ -101,6 +103,7 @@ export function createSignalMonitor({ onLines } = {}) {
     } finally {
       clearTimeout(link.timer);
       link.reader.releaseLock();
+      await link.pendingWrite;
       await link.port.close().catch(error => { link.closeError = error; });
       connection = null;
       update(failed || link.closeError ? 'error' : 'disconnected', failed || link.closeError
@@ -150,12 +153,29 @@ export function createSignalMonitor({ onLines } = {}) {
     }
   }
 
+  function sendBelt(command) {
+    const link = connection;
+    if (!['Q1', 'Q2', 'STOP'].includes(command) || !link || link.stopping ||
+        !link.port.writable || !frame?.belt || (link.pendingWrite && command !== 'STOP')) return;
+    const write = async () => {
+      const writer = link.port.writable.getWriter();
+      try { await writer.write(new TextEncoder().encode('BELT ' + command + '\n')); }
+      finally { writer.releaseLock(); }
+    };
+    const pending = Promise.resolve(link.pendingWrite).then(write);
+    link.pendingWrite = pending.catch(() => {});
+    const current = link.pendingWrite;
+    return pending.finally(() => { if (link.pendingWrite === current) link.pendingWrite = null; });
+  }
+
   async function disconnect() {
     if (attempt) attempt.cancelled = true;
     const link = connection;
     if (!link) return;
     if (!link.stopping) {
+      const stop = sendBelt('STOP');
       link.stopping = true;
+      await stop?.catch(() => {});
       clearTimeout(link.timer);
       update('closing', 'Releasing USB port…');
       await link.reader.cancel().catch(() => {});
@@ -177,6 +197,7 @@ export function createSignalMonitor({ onLines } = {}) {
       listener(snapshot());
       return () => listeners.delete(listener);
     },
+    sendBelt,
     connect: () => open(true),
     reconnect: () => open(false),
     disconnect,
