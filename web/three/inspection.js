@@ -120,7 +120,7 @@ export function mountInspection({ warehouse, canvas, camera, invalidate, focusPa
     const sensorOn = sensorKnown && level === state.activeLevels[id];
     let sensorText = '';
     if (sensorKnown) sensorText = isBarrier(part?.id) ? (sensorOn ? 'Beam interrupted' : 'Beam clear') : (sensorOn ? 'Active' : 'Inactive');
-    status.textContent = id ? [id, levelName(level), sensorText].filter(Boolean).join(' Â· ') : '';
+    status.textContent = id ? [id, levelName(level), sensorText].filter(Boolean).join(' · ') : '';
     status.toggleAttribute('data-linked', Boolean(sensorKnown));
     status.toggleAttribute('data-sensor-active', Boolean(sensorOn));
     status.dataset.level = level === 1 ? 'high' : level === 0 ? 'low' : 'unknown';
@@ -136,7 +136,7 @@ export function mountInspection({ warehouse, canvas, camera, invalidate, focusPa
       const signal = bySignal.get(code);
       const rawIds = digitalIds.filter(raw => state.mapping[raw] === code);
       const visibleIds = state.source === 'usb' ? rawIds : [code];
-      const legend = code + ' Â· terminal ' + signal.terminal;
+      const legend = code + ' · terminal ' + signal.terminal;
       if (!visibleIds.length) {
         const span = document.createElement('span');
         span.textContent = legend;
@@ -145,7 +145,7 @@ export function mountInspection({ warehouse, canvas, camera, invalidate, focusPa
       for (const visibleId of visibleIds) {
         const b = document.createElement('button');
         b.type = 'button';
-        b.textContent = (state.source === 'usb' ? visibleId + ' â†’ ' : '') + legend;
+        b.textContent = (state.source === 'usb' ? visibleId + ' → ' : '') + legend;
         b.title = 'Show signal trace for ' + visibleId;
         b.addEventListener('click', () => selectSignal(visibleId));
         fragment.append(b);
@@ -173,7 +173,7 @@ export function mountInspection({ warehouse, canvas, camera, invalidate, focusPa
         button.toggleAttribute('data-sensor-active', sensorOn);
         button.dataset.level = level === 1 ? 'high' : level === 0 ? 'low' : 'unknown';
         button.setAttribute('aria-pressed', String(id === selectedChannel));
-        const hint = id + ' Â· ' + levelName(level) + (signal ? ' Â· ' + signal + ' Â· ' + parts.get(partId).name : ' Â· Unmapped') + (sensorOn ? ' Â· Active' : '');
+        const hint = id + ' · ' + levelName(level) + (signal ? ' · ' + signal + ' · ' + parts.get(partId).name : ' · Unmapped') + (sensorOn ? ' · Active' : '');
         button.title = hint;
         button.setAttribute('aria-label', hint);
       }
@@ -204,12 +204,12 @@ export function mountInspection({ warehouse, canvas, camera, invalidate, focusPa
       item.button.toggleAttribute('data-selected', selected);
       const channels = currents || recent?.channels;
       const code = channels ? [...new Set(channels.map(raw => usb ? state.mapping[raw] : raw))].join(' + ') : selected ? selectedChannel : null;
-      const text = (code ? code + ' Â· ' : '') + item.part.name;
+      const text = (code ? code + ' · ' : '') + item.part.name;
       if (item.caption.textContent !== text) item.caption.textContent = text;
       const action = currents ? (isBarrier(id) ? 'Beam interrupted' : 'Active') : recent ? 'Recently active' : '';
       item.status.hidden = !action;
       if (item.status.textContent !== action) item.status.textContent = action;
-      item.button.title = [text, action, usb ? channels?.join(' + ') : ''].filter(Boolean).join(' Â· ');
+      item.button.title = [text, action, usb ? channels?.join(' + ') : ''].filter(Boolean).join(' · ');
       item.button.setAttribute('aria-label', item.button.title);
       item.button.dataset.code = code || '';
       currentLabels.push(item);

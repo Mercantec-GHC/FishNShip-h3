@@ -11,7 +11,7 @@ import { tags } from '@lezer/highlight';
 
 const arduinoCompletions = completeFromList([
   { label: 'Serial', type: 'variable', detail: 'USB serial port' },
-  { label: 'Wire', type: 'variable', detail: 'IÂ²C' },
+  { label: 'Wire', type: 'variable', detail: 'I²C' },
   { label: 'MachineControl_DigitalInputs', type: 'variable', detail: 'Portenta' },
   { label: 'setup', type: 'function' },
   { label: 'loop', type: 'function' },
