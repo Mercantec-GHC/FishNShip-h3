@@ -118,12 +118,25 @@ export function mountSignalPanel({ onSourceChange, onSelectSignal, onDigitalStat
   const connect = find('connect');
   const reconnect = find('reconnect');
   const disconnect = find('disconnect');
-  for (const button of find('conveyor-actions').children) find('part-conveyor').append(button.cloneNode(true));
-  const beltButtons = [...document.querySelectorAll('[data-belt]')];
-  for (const button of beltButtons) button.addEventListener('click', async () => {
-    try { await monitor.sendBelt(button.dataset.belt); }
-    catch { setText(usbMessage, 'Could not send the conveyor command. Check the USB connection.'); }
-  });
+  const motorPicker = find('motor-picker');
+  const motorButtons = [];
+  for (const group of [find('motor-actions'), find('part-motor')]) {
+    for (const output of [...demoGroups.outputs, { id: 'STOP', label: 'Stop all' }]) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.disabled = true;
+      button.dataset.command = output.id;
+      if (output.motor) button.dataset.motor = output.motor;
+      button.textContent = output.motor ? output.id + ' · ' + output.label + ' 1 s' : output.label;
+      button.addEventListener('click', async () => {
+        try { await monitor.sendMotor(output.id); }
+        catch { setText(usbMessage, 'Could not send the motor command. Check the USB connection.'); }
+      });
+      group.append(button);
+      motorButtons.push(button);
+    }
+  }
+  motorPicker.addEventListener('change', renderStatus);
   const wiringTools = find('wiring-tools');
   const toggleWiring = find('toggle-wiring');
   const wiringEditor = find('wiring-editor');
@@ -152,8 +165,7 @@ export function mountSignalPanel({ onSourceChange, onSelectSignal, onDigitalStat
     if (source === 'demo') {
       for (const { id } of signals) levels[id] = Number(demo.signals[id]);
     } else {
-      levels.Q1 = usb.frame?.belt?.[0] ?? null;
-      levels.Q2 = usb.frame?.belt?.[1] ?? null;
+      for (const [index, output] of demoGroups.outputs.entries()) levels[output.id] = usb.frame?.outputs?.[index] ?? null;
       for (const { id, index } of portentaGroups.inputs) levels[id] = usb.frame?.digital[index] ?? null;
     }
     const key = source + Object.values(levels).map(value => value ?? '-').join('');
@@ -370,12 +382,16 @@ export function mountSignalPanel({ onSourceChange, onSelectSignal, onDigitalStat
     }
     statusLamp.dataset.mode = usb.phase === 'live' ? 'live' : 'idle';
     setText(status, usb.phase === 'live' ? 'Portenta readings' : 'No current readings');
-    const belt = usb.frame?.belt;
-    const moving = belt?.some(Boolean);
-    const description = belt ? (belt[0] ? 'Q1 · Forward' : belt[1] ? 'Q2 · Reverse' : 'Stopped') :
-      usb.frame ? 'Upload the conveyor control sketch to enable the outputs.' : 'Waiting for USB output readings.';
-    setText(find('belt-state'), description);
-    for (const button of beltButtons) button.disabled = !belt || (moving && button.dataset.belt !== 'STOP');
+    const outputs = usb.frame?.outputs;
+    const active = demoGroups.outputs[outputs?.indexOf(1)];
+    const upgrade = outputs?.length === 2 && motorPicker.value !== 'M1';
+    const description = active ? active.id + ' · ' + active.label : outputs ? 'Stopped' : 'Waiting for USB output readings.';
+    setText(find('motor-state'), (upgrade || (usb.frame && !outputs)) ? description + ' Upload the all-motor sketch to enable Q1–Q8.' : description);
+    for (const button of motorButtons) {
+      if (button.parentElement.id === 'motor-actions') button.hidden = Boolean(button.dataset.motor && button.dataset.motor !== motorPicker.value);
+      const command = button.dataset.command;
+      button.disabled = !outputs || (command !== 'STOP' && (Boolean(active) || Number(command.slice(1)) > outputs.length));
+    }
     setText(usbMessage, usb.message);
     connect.hidden = !usb.canChoose;
     reconnect.hidden = !usb.canReconnect;

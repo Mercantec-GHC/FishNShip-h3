@@ -7,9 +7,11 @@ export function parseSignalFrame(line) {
   if (!digital) return null;
   // The sketch can append its own telemetry after the eight digital levels.
   const analog = analogPattern.exec(text.slice(digital[0].length));
-  const belt = /\sQ1=([01])\s+Q2=([01])$/.exec(text);
+  const report = /\s(Q1=[01]\s+Q2=[01](?:\s+Q3=[01]\s+Q4=[01]\s+Q5=[01]\s+Q6=[01]\s+Q7=[01]\s+Q8=[01])?)$/.exec(text);
+  const outputs = report ? report[1].split(/\s+/).map(field => Number(field.at(-1))) : null;
   return {
-    belt: belt ? [Number(belt[1]), Number(belt[2])] : null,
+    outputs,
+    belt: outputs?.slice(0, 2) ?? null,
     digital: digital.slice(1).map(Number),
     analog: analog ? analog.slice(1, 4).map(Number) : [],
     adc: analog?.[4] === undefined ? [] : analog.slice(4, 7).map(Number),
@@ -153,13 +155,14 @@ export function createSignalMonitor({ onLines } = {}) {
     }
   }
 
-  function sendBelt(command) {
+  function sendMotor(command) {
     const link = connection;
-    if (!['Q1', 'Q2', 'STOP'].includes(command) || !link || link.stopping ||
-        !link.port.writable || !frame?.belt || (link.pendingWrite && command !== 'STOP')) return;
+    const count = frame?.outputs?.length ?? 0;
+    if (!count || (command !== 'STOP' && (!/^Q[1-8]$/.test(command) || Number(command[1]) > count)) || !link || link.stopping ||
+        !link.port.writable || (link.pendingWrite && command !== 'STOP')) return;
     const write = async () => {
       const writer = link.port.writable.getWriter();
-      try { await writer.write(new TextEncoder().encode('BELT ' + command + '\n')); }
+      try { await writer.write(new TextEncoder().encode((count === 2 ? 'BELT ' : 'MOTOR ') + command + '\n')); }
       finally { writer.releaseLock(); }
     };
     const pending = Promise.resolve(link.pendingWrite).then(write);
@@ -173,7 +176,7 @@ export function createSignalMonitor({ onLines } = {}) {
     const link = connection;
     if (!link) return;
     if (!link.stopping) {
-      const stop = sendBelt('STOP');
+      const stop = sendMotor('STOP');
       link.stopping = true;
       await stop?.catch(() => {});
       clearTimeout(link.timer);
@@ -197,7 +200,8 @@ export function createSignalMonitor({ onLines } = {}) {
       listener(snapshot());
       return () => listeners.delete(listener);
     },
-    sendBelt,
+    sendMotor,
+    sendBelt: sendMotor,
     connect: () => open(true),
     reconnect: () => open(false),
     disconnect,

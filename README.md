@@ -40,11 +40,18 @@ Open the [3D model](https://fishnship.mercantec.tech/three). Drag to rotate, scr
 
 Under **USB live**, connect the Portenta to see raw digital and analog readings. In **Map inputs**, match each digital channel to its physical warehouse terminal and active level. With the standard wiring, the inner and outer light barriers go low when interrupted. An active mapped sensor glows green on the model.
 
-### Control the conveyor over USB
+### Control all four motors over USB
 
-Upload the included Demo/Demo.ino sketch and open **USB live** on the 3D page. Connect the Portenta and use **Q1 · Forward 1 s** or **Q2 · Reverse 1 s** to jog the physical conveyor. **Stop** ends the jog early. These controls assume digital output 0 is wired to Q1 and output 1 to Q2.
+Upload the included `Demo/Demo.ino` to the Portenta and connect from **USB live** on the 3D page. Choose a motor in the side panel or select it on the model. Each direction button requests a one-second jog. **Stop all** ends the current jog early. Digital and analog input readings continue during motion.
 
-The sketch starts with both outputs low, energizes one direction at a time and stops each jog locally after one second, including if the USB connection drops. It requires 250 ms at rest before accepting another jog. Input readings continue during motion. The panel and model show the output state reported by the sketch. Actual belt movement depends on the wiring and motor supply.
+| Motor | First direction | Second direction | Portenta digital outputs |
+| --- | --- | --- | --- |
+| M1 Conveyor | Q1 forward | Q2 reverse | 0, 1 |
+| M2 Horizontal drive | Q3 toward rack | Q4 toward conveyor | 2, 3 |
+| M3 Vertical lift | Q5 lower | Q6 raise | 4, 5 |
+| M4 Telescopic fork | Q7 extend | Q8 retract | 6, 7 |
+
+Verify the wiring and available travel before jogging an axis. Manual jogs are time-limited and do not use position or limit-switch feedback. The firmware starts with all outputs low, energizes one output at a time and requires 250 ms at rest between jogs. The model highlights the output reported by the board. Older conveyor firmware supports Q1 and Q2 only.
 
 ## Rebuild the frontend
 

@@ -21,17 +21,16 @@ uint8_t direction = 0;
 uint32_t changedAt = 0;
 uint32_t lastReport = 0;
 
-void stopConveyor()
+void stopMotors()
 {
-    MachineControl_DigitalOutputs.write(0, LOW);
-    MachineControl_DigitalOutputs.write(1, LOW);
+    MachineControl_DigitalOutputs.writeAll(0);
     direction = 0;
     changedAt = millis();
 }
 
-void serviceConveyor()
+void serviceMotors()
 {
-    if (direction && millis() - changedAt >= 1000) stopConveyor();
+    if (direction && millis() - changedAt >= 1000) stopMotors();
 
     static char line[12];
     static size_t length = 0;
@@ -46,14 +45,18 @@ void serviceConveyor()
         if (length < sizeof(line))
         {
             line[length] = 0;
-            if (!strcmp(line, "BELT STOP")) stopConveyor();
+            if (!strcmp(line, "MOTOR STOP") || !strcmp(line, "BELT STOP")) stopMotors();
             else if (!direction && millis() - changedAt >= 250)
             {
-                const bool forward = !strcmp(line, "BELT Q1");
-                if (forward || !strcmp(line, "BELT Q2"))
+                uint8_t output = 0;
+                if (length == 8 && !strncmp(line, "MOTOR Q", 7) && line[7] >= '1' && line[7] <= '8')
+                    output = line[7] - '0';
+                else if (!strcmp(line, "BELT Q1")) output = 1;
+                else if (!strcmp(line, "BELT Q2")) output = 2;
+                if (output)
                 {
-                    direction = forward ? 1 : 2;
-                    MachineControl_DigitalOutputs.write(direction - 1, HIGH);
+                    direction = output;
+                    MachineControl_DigitalOutputs.writeAll(1u << (output - 1));
                     changedAt = millis();
                 }
             }
@@ -68,7 +71,7 @@ void setup()
 
     Wire.begin();
     MachineControl_DigitalOutputs.begin();
-    stopConveyor();
+    stopMotors();
     MachineControl_DigitalInputs.begin();
     analogReady = MachineControl_AnalogIn.begin(SensorType::V_0_10);
     if (!analogReady)
@@ -81,7 +84,7 @@ void setup()
 
 void loop()
 {
-    serviceConveyor();
+    serviceMotors();
     if (millis() - lastReport < 200) return;
     lastReport = millis();
     const uint32_t inputs = MachineControl_DigitalInputs.readAll();
@@ -118,8 +121,12 @@ void loop()
             Serial.print(counts[channel]);
         }
     }
-    Serial.print("  Q1=");
-    Serial.print(direction == 1 ? 1 : 0);
-    Serial.print("  Q2=");
-    Serial.println(direction == 2 ? 1 : 0);
+    for (uint8_t output = 1; output <= 8; ++output)
+    {
+        Serial.print("  Q");
+        Serial.print(output);
+        Serial.print('=');
+        Serial.print(direction == output ? 1 : 0);
+    }
+    Serial.println();
 }

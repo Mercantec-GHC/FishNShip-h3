@@ -108,7 +108,11 @@ export function mountInspection({ warehouse, canvas, camera, invalidate, focusPa
   function updateDetails(part) {
     const id = selectedChannel;
     info.hidden = !part && !id;
-    q('part-conveyor').hidden = state.source !== 'usb' || !['belt', 'belt-motor'].includes(part?.id);
+    const motor = bySignal.get(part?.signals.find(code => bySignal.get(code)?.motor))?.motor ||
+      ({ belt: 'M1', rail: 'M2', mast: 'M3', carriage: 'M3', fork: 'M4' })[part?.id];
+    const controls = q('part-motor');
+    controls.hidden = state.source !== 'usb' || !motor;
+    for (const button of controls.children) button.hidden = Boolean(button.dataset.motor && button.dataset.motor !== motor);
     if (info.hidden) return;
     q('part-name').textContent = part?.name || 'Portenta ' + id;
     q('part-description').textContent = part ? descriptions[part.id] :
@@ -164,12 +168,14 @@ export function mountInspection({ warehouse, canvas, camera, invalidate, focusPa
     updateDetails(parts.get(currentId));
     if (usb) {
       let high = 0, measured = false;
+      const activeSensors = new Set();
       for (const [id, button] of chips) {
         const level = state.levels[id];
         const signal = state.mapping[id], partId = warehouse.partBySignal[signal];
         measured ||= level === 0 || level === 1;
         if (level === 1) high++;
         const sensorOn = Boolean(partId && activeParts.get(partId)?.includes(id));
+        if (sensorOn) activeSensors.add(partId);
         button.toggleAttribute('data-linked', Boolean(partId));
         button.toggleAttribute('data-sensor-active', sensorOn);
         button.dataset.level = level === 1 ? 'high' : level === 0 ? 'low' : 'unknown';
@@ -178,7 +184,7 @@ export function mountInspection({ warehouse, canvas, camera, invalidate, focusPa
         button.title = hint;
         button.setAttribute('aria-label', hint);
       }
-      const count = digitalIds.some(id => state.mapping[id]) ? (activeParts.size - Number(activeParts.has('belt-motor'))) + ' active' : high + ' high';
+      const count = digitalIds.some(id => state.mapping[id]) ? activeSensors.size + ' active' : high + ' high';
       q('digital-count').textContent = measured ? count : 'No reading';
     }
     currentLabels = [];
@@ -207,7 +213,7 @@ export function mountInspection({ warehouse, canvas, camera, invalidate, focusPa
       const code = channels ? [...new Set(channels.map(raw => usb ? (state.mapping[raw] ?? raw) : raw))].join(' + ') : selected ? selectedChannel : null;
       const text = (code ? code + ' · ' : '') + item.part.name;
       if (item.caption.textContent !== text) item.caption.textContent = text;
-      const action = currents && id === 'belt-motor' ? (currents.includes('Q1') ? 'Forward' : 'Reverse') : currents ? (isBarrier(id) ? 'Beam interrupted' : 'Active') : recent ? 'Recently active' : '';
+      const action = currents && bySignal.get(currents[0])?.motor ? bySignal.get(currents[0]).label : currents ? (isBarrier(id) ? 'Beam interrupted' : 'Active') : recent ? 'Recently active' : '';
       item.status.hidden = !action;
       if (item.status.textContent !== action) item.status.textContent = action;
       item.button.title = [text, action, usb ? channels?.join(' + ') : ''].filter(Boolean).join(' · ');
@@ -234,7 +240,9 @@ export function mountInspection({ warehouse, canvas, camera, invalidate, focusPa
       active.get(partId).push(channel);
     }
 
-    if (usb && (next.levels.Q1 || next.levels.Q2)) active.set('belt-motor', [next.levels.Q1 ? 'Q1' : 'Q2']);
+    if (usb) for (const signal of signals) {
+      if (signal.motor && next.levels[signal.id] === 1) active.set(warehouse.partBySignal[signal.id], [signal.id]);
+    }
 
     // A brief measured USB pulse can start and end before the next paint.
     // Extinguish the live light immediately; keep a separately labelled trace.
