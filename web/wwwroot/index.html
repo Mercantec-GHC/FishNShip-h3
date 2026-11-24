@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="da">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="FishNShip-værktøjet til Arduino-kode, kompilering og overvågning af Portenta via USB.">
-  <title>FishNShip · Arduino-værktøj</title>
+  <meta name="description" content="FishNShip tools for editing Arduino sketches, compiling firmware and monitoring Portenta signals over USB.">
+  <title>FishNShip · Arduino tools</title>
   <link rel="stylesheet" href="/styles.css?v=usb-bridge">
   <script type="module" src="/firmware.js?v=firmware-package"></script>
 </head>
@@ -14,20 +14,20 @@
       <div>
         <h1>FishNShip</h1>
         <p>Arduino Portenta Machine Control</p>
-        <nav class="section-links" aria-label="Visninger">
-          <a href="#firmware">Kode og upload</a>
+        <nav class="section-links" aria-label="Views">
+          <a href="#firmware">Code and upload</a>
           <a href="#serial">Serial Monitor</a>
-          <a href="#signals">Signaler</a>
-          <a href="/three">3D-model</a>
+          <a href="#signals">Signals</a>
+          <a href="/three">3D model</a>
         </nav>
       </div>
       <div class="connection">
         <div class="usb-actions" role="group" aria-label="Arduino USB">
-          <button type="button" class="button button-primary" data-usb="choose" disabled>Vælg Arduino</button>
-          <button type="button" class="button" data-usb="reconnect" disabled>Forbind igen</button>
-          <button type="button" class="button" data-usb="disconnect" disabled>Afbryd</button>
+          <button type="button" class="button button-primary" data-usb="choose" disabled>Select Arduino</button>
+          <button type="button" class="button" data-usb="reconnect" disabled>Reconnect</button>
+          <button type="button" class="button" data-usb="disconnect" disabled>Disconnect</button>
         </div>
-        <span id="connection-status" role="status">Ingen Arduino tilsluttet</span>
+        <span id="connection-status" role="status">No Arduino connected</span>
       </div>
     </div>
   </header>
@@ -36,76 +36,76 @@
     <section class="firmware" id="firmware" aria-labelledby="firmware-heading">
       <div class="section-heading">
         <div>
-          <h2 id="firmware-heading">Kode og upload</h2>
-          <p>Demo.ino på Arduino Portenta H7 (M7)</p>
+          <h2 id="firmware-heading">Code and upload</h2>
+          <p>Demo.ino on Arduino Portenta H7 (M7)</p>
         </div>
-        <span id="sketch-status" role="status">Henter skitsen…</span>
+        <span id="sketch-status" role="status">Loading sketch…</span>
       </div>
       <div class="firmware-body">
         <div class="editor-panel">
           <div class="editor-toolbar">
-            <span id="sketch-label" class="field-label">Arduino-kode</span>
+            <span id="sketch-label" class="field-label">Arduino code</span>
             <div class="firmware-actions">
-              <button type="button" id="search-sketch" class="button" title="Ctrl+F" disabled>Søg og erstat</button>
-              <button type="button" id="download-sketch" class="button" disabled>Hent .ino</button>
+              <button type="button" id="search-sketch" class="button" title="Ctrl+F" disabled>Find and replace</button>
+              <button type="button" id="download-sketch" class="button" disabled>Download .ino</button>
             </div>
           </div>
           <div id="sketch"></div>
-          <div class="editor-status"><span id="cursor-status">Linje 1, kolonne 1</span><span>C++ / Arduino</span></div>
+          <div class="editor-status"><span id="cursor-status">Line 1, column 1</span><span>C++ / Arduino</span></div>
           <div class="firmware-actions">
-            <button type="button" id="save-sketch" class="button" title="Ctrl+S" disabled>Gem i projektet</button>
-            <button type="button" id="compile-sketch" class="button button-primary" title="Ctrl+Enter" disabled>Kompilér</button>
+            <button type="button" id="save-sketch" class="button" title="Ctrl+S" disabled>Save to project</button>
+            <button type="button" id="compile-sketch" class="button button-primary" title="Ctrl+Enter" disabled>Compile</button>
           </div>
         </div>
         <div class="upload-panel">
           <div id="firmware-package" class="bridge-panel" hidden>
-            <button type="button" id="download-firmware" class="button button-primary" disabled>Hent firmwarepakke</button>
-            <p class="subtle">Kompilér, pak ZIP-filen ud, og kør Upload.cmd på Windows-computeren med Portenta.</p>
+            <button type="button" id="download-firmware" class="button button-primary" disabled>Download firmware package</button>
+            <p class="subtle">Compile, extract the ZIP file and run Upload.cmd on the Windows computer connected to the Portenta.</p>
           </div>
           <div id="local-bridge" class="bridge-panel" hidden>
-            <button type="button" id="show-bridge-key" class="button">Vis kode til online upload</button>
-            <input id="local-bridge-key" type="text" aria-label="Kode til online upload" readonly hidden>
-            <p class="subtle">Koden gælder indtil denne lokale server genstartes.</p>
+            <button type="button" id="show-bridge-key" class="button">Show online upload code</button>
+            <input id="local-bridge-key" type="text" aria-label="Online upload code" readonly hidden>
+            <p class="subtle">The code is valid until this local server restarts.</p>
           </div>
           <div id="hosted-bridge" class="bridge-panel" hidden>
             <details>
-              <summary>Forbind med uploadkode</summary>
+              <summary>Connect with an upload code</summary>
               <form id="bridge-form" class="bridge-form">
-                <label for="hosted-bridge-key" class="field-label">Lokal uploadkode</label>
+                <label for="hosted-bridge-key" class="field-label">Local upload code</label>
                 <div class="firmware-actions">
                   <input id="hosted-bridge-key" type="password" autocomplete="off" spellcheck="false" required minlength="32" maxlength="32">
-                  <button type="submit" id="pair-bridge" class="button">Forbind lokal upload</button>
+                  <button type="submit" id="pair-bridge" class="button">Connect local uploader</button>
                 </div>
               </form>
-              <p class="subtle">Hent koden i <a href="http://localhost:5080/#firmware" target="_blank" rel="noopener">det lokale værktøj</a> på Arduino-computeren.</p>
+              <p class="subtle">Get the code from <a href="http://localhost:5080/#firmware" target="_blank" rel="noopener">the local tool</a> on the computer connected to the Arduino.</p>
             </details>
             <p id="bridge-status" class="subtle" role="status"></p>
           </div>
-          <label for="upload-port" id="upload-port-label" class="field-label">Port til upload</label>
+          <label for="upload-port" id="upload-port-label" class="field-label">Upload port</label>
           <div class="firmware-actions">
-            <select id="upload-port" aria-describedby="port-status" disabled><option value="">Vælg Portenta</option></select>
+            <select id="upload-port" aria-describedby="port-status" disabled><option value="">Select Portenta</option></select>
             <button type="button" id="refresh-ports" class="button" disabled>Find port</button>
           </div>
-          <p id="port-status" class="subtle" role="status">Tilslut Arduino via USB.</p>
+          <p id="port-status" class="subtle" role="status">Connect the Arduino via USB.</p>
           <button type="button" id="upload-sketch" class="button button-primary" disabled>Upload firmware</button>
-          <p id="firmware-status" class="subtle" role="status">Kompilér koden før upload.</p>
-          <div class="console-label"><h3 id="build-log-label">Kompilering og upload</h3></div>
-          <pre id="build-log" class="console" aria-labelledby="build-log-label" tabindex="0">Kompileringsoutput vises her.</pre>
+          <p id="firmware-status" class="subtle" role="status">Compile the sketch before uploading.</p>
+          <div class="console-label"><h3 id="build-log-label">Build and upload</h3></div>
+          <pre id="build-log" class="console" aria-labelledby="build-log-label" tabindex="0">Compiler output will appear here.</pre>
         </div>
         <div class="serial-panel" id="serial">
           <div class="console-label">
             <h3 id="serial-log-label">Serial Monitor <span>115200 baud</span></h3>
-            <button type="button" id="clear-serial" class="button">Ryd log</button>
+            <button type="button" id="clear-serial" class="button">Clear log</button>
           </div>
           <div class="serial-toolbar">
             <div class="usb-actions" role="group" aria-label="Serial Monitor USB">
-              <button type="button" class="button" data-usb="choose" disabled>Vælg Arduino</button>
-              <button type="button" class="button" data-usb="reconnect" disabled>Forbind igen</button>
-              <button type="button" class="button" data-usb="disconnect" disabled>Afbryd</button>
+              <button type="button" class="button" data-usb="choose" disabled>Select Arduino</button>
+              <button type="button" class="button" data-usb="reconnect" disabled>Reconnect</button>
+              <button type="button" class="button" data-usb="disconnect" disabled>Disconnect</button>
             </div>
-            <span id="monitor-status" class="subtle">Ingen Arduino tilsluttet</span>
+            <span id="monitor-status" class="subtle">No Arduino connected</span>
           </div>
-          <pre id="serial-log" class="console" aria-labelledby="serial-log-label" tabindex="0">Klik Vælg Arduino for at læse skitsens udskrifter.</pre>
+          <pre id="serial-log" class="console" aria-labelledby="serial-log-label" tabindex="0">Click Select Arduino to read the serial output from the sketch.</pre>
         </div>
       </div>
     </section>
@@ -113,50 +113,50 @@
     <section class="inputs" id="signals" aria-labelledby="inputs-heading">
       <div class="section-heading">
         <div>
-          <h2 id="inputs-heading">Digitale indgange</h2>
-          <p id="input-source">Tilslut Arduino via USB for at se signaler.</p>
+          <h2 id="inputs-heading">Digital inputs</h2>
+          <p id="input-source">Connect the Arduino via USB to see signals.</p>
         </div>
-        <span class="input-count" id="input-count">Ingen aflæsning</span>
+        <span class="input-count" id="input-count">No readings</span>
       </div>
       <table>
-        <thead><tr><th scope="col">Kanal</th><th scope="col">Niveau</th></tr></thead>
+        <thead><tr><th scope="col">Channel</th><th scope="col">Level</th></tr></thead>
         <tbody id="input-rows">
-          <tr><th scope="row">DI0</th><td><span class="input-level">Ingen måling</span></td></tr>
-          <tr><th scope="row">DI1</th><td><span class="input-level">Ingen måling</span></td></tr>
-          <tr><th scope="row">DI2</th><td><span class="input-level">Ingen måling</span></td></tr>
-          <tr><th scope="row">DI3</th><td><span class="input-level">Ingen måling</span></td></tr>
-          <tr><th scope="row">DI4</th><td><span class="input-level">Ingen måling</span></td></tr>
-          <tr><th scope="row">DI5</th><td><span class="input-level">Ingen måling</span></td></tr>
-          <tr><th scope="row">DI6</th><td><span class="input-level">Ingen måling</span></td></tr>
-          <tr><th scope="row">DI7</th><td><span class="input-level">Ingen måling</span></td></tr>
+          <tr><th scope="row">DI0</th><td><span class="input-level">No reading</span></td></tr>
+          <tr><th scope="row">DI1</th><td><span class="input-level">No reading</span></td></tr>
+          <tr><th scope="row">DI2</th><td><span class="input-level">No reading</span></td></tr>
+          <tr><th scope="row">DI3</th><td><span class="input-level">No reading</span></td></tr>
+          <tr><th scope="row">DI4</th><td><span class="input-level">No reading</span></td></tr>
+          <tr><th scope="row">DI5</th><td><span class="input-level">No reading</span></td></tr>
+          <tr><th scope="row">DI6</th><td><span class="input-level">No reading</span></td></tr>
+          <tr><th scope="row">DI7</th><td><span class="input-level">No reading</span></td></tr>
         </tbody>
       </table>
-      <p id="last-change" class="last-change">Seneste skift vises her.</p>
+      <p id="last-change" class="last-change">The latest transition will appear here.</p>
     </section>
 
     <section class="inputs" aria-labelledby="analog-heading">
       <div class="section-heading">
         <div>
-          <h2 id="analog-heading">Analoge indgange</h2>
-          <p>16-bit råværdier i Portentas 0–10 V-tilstand</p>
+          <h2 id="analog-heading">Analog inputs</h2>
+          <p>Raw 16-bit values in Portenta 0–10 V mode</p>
         </div>
       </div>
       <table>
-        <thead><tr><th scope="col">Kanal</th><th scope="col">Volt</th><th scope="col">ADC</th><th scope="col">Målestatus</th></tr></thead>
+        <thead><tr><th scope="col">Channel</th><th scope="col">Volts</th><th scope="col">ADC</th><th scope="col">Reading status</th></tr></thead>
         <tbody id="analog-inputs">
-          <tr><th scope="row">AI0</th><td>–</td><td>–</td><td>Ingen måling</td></tr>
-          <tr><th scope="row">AI1</th><td>–</td><td>–</td><td>Ingen måling</td></tr>
-          <tr><th scope="row">AI2</th><td>–</td><td>–</td><td>Ingen måling</td></tr>
+          <tr><th scope="row">AI0</th><td>–</td><td>–</td><td>No reading</td></tr>
+          <tr><th scope="row">AI1</th><td>–</td><td>–</td><td>No reading</td></tr>
+          <tr><th scope="row">AI2</th><td>–</td><td>–</td><td>No reading</td></tr>
         </tbody>
       </table>
     </section>
 
     <section class="events" aria-labelledby="events-heading">
-      <h2 id="events-heading">Hændelser</h2>
-      <p id="events-empty" class="subtle">Ingen hændelser endnu.</p>
+      <h2 id="events-heading">Events</h2>
+      <p id="events-empty" class="subtle">No events yet.</p>
       <ol id="events" aria-live="polite" aria-relevant="additions"></ol>
     </section>
-    <noscript><p>Slå JavaScript til for at redigere kode og overvåge Arduino.</p></noscript>
+    <noscript><p>Enable JavaScript to edit code and monitor the Arduino.</p></noscript>
   </main>
 </body>
 </html>

@@ -2,27 +2,27 @@ import * as THREE from 'three';
 import { signals } from './simulation.js';
 
 const descriptions = {
-  'reference-x': 'Kontakten giver vognen et fast nulpunkt ved transportbåndet.',
-  'reference-y': 'Kontakten øverst på masten giver løftevognen dens lodrette nulpunkt.',
-  'inner-gate': 'Lysbommen ved overdragelsen registrerer emneholderen mellem båndet og gaflen.',
-  'outer-gate': 'Lysbommen registrerer emneholderen ved båndets ydre ende.',
-  'reader-lower': 'Den nederste læser registrerer det nederste spor i emneholderens kode.',
-  'reader-upper': 'Den øverste læser registrerer det øverste spor i emneholderens kode.',
-  'fork-out': 'Endekontakten registrerer, når teleskopgaflen er kørt helt frem.',
-  'fork-in': 'Endekontakten registrerer, når teleskopgaflen er trukket tilbage.',
-  'drive-x': 'Motoren flytter masten langs reolen. De to enkoderspor registrerer bevægelsen.',
-  'drive-y': 'Motoren hæver og sænker løftevognen. De to enkoderspor registrerer bevægelsen.',
-  'belt-motor': 'Motoren kører båndet i begge retninger mellem indløbet og gaflen.',
-  'fork-motor': 'Motoren skyder teleskopgaflen frem og trækker den tilbage.',
-  rack: 'De ni lagerpladser holder emneholderne på røde støttearme i tre etager.',
-  belt: 'Båndet transporterer en emneholder mellem indløbet og løftevognen.',
-  mast: 'Masten fører løftevognen op og ned foran lagerpladserne.',
-  carriage: 'Løftevognen bærer gaflen og bevæger sig lodret på masten.',
-  rail: 'Spindlen flytter masten vandret langs styreskinnerne.',
-  fork: 'Gaflen griber under emneholderen ved båndet og ved lagerpladsen.',
-  carrier: 'Gaflen flytter holderen med det røde emne mellem båndet og reolen.',
-  io: 'Klemmerne samler lagerets forsyning, sensorsignaler og motorudgange.',
-  base: 'Bundpladen bærer reolen, køreskinnerne, båndet og I/O-kortet.',
+  'reference-x': 'The switch establishes the horizontal home position at the conveyor.',
+  'reference-y': 'The switch at the top of the mast establishes the vertical home position.',
+  'inner-gate': 'The inner light barrier detects the carrier at the transfer point between the conveyor and the fork.',
+  'outer-gate': 'The outer light barrier detects the carrier at the outer end of the conveyor.',
+  'reader-lower': 'The lower sensor reads the lower track of the carrier code.',
+  'reader-upper': 'The upper sensor reads the upper track of the carrier code.',
+  'fork-out': 'The limit switch detects when the telescopic fork is fully extended.',
+  'fork-in': 'The limit switch detects when the telescopic fork is retracted.',
+  'drive-x': 'The motor moves the mast along the rack. Two encoder tracks measure its movement.',
+  'drive-y': 'The motor raises and lowers the carriage. Two encoder tracks measure its movement.',
+  'belt-motor': 'The motor drives the conveyor in either direction between the inlet and the fork.',
+  'fork-motor': 'The motor extends and retracts the telescopic fork.',
+  rack: 'Nine storage bays support the carriers on red arms across three levels.',
+  belt: 'The conveyor moves a carrier between the inlet and the lift carriage.',
+  mast: 'The mast guides the carriage vertically in front of the storage bays.',
+  carriage: 'The carriage supports the fork and travels vertically along the mast.',
+  rail: 'The spindle moves the mast horizontally along the guide rails.',
+  fork: 'The fork slides under the carrier at the conveyor and at the storage bay.',
+  carrier: 'The fork moves the carrier and its red workpiece between the conveyor and the rack.',
+  io: 'The terminals connect the power supply, sensor signals and motor outputs.',
+  base: 'The baseplate supports the rack, guide rails, conveyor and I/O board.',
 };
 const digitalIds = Array.from({ length: 8 }, (_, i) => 'DI' + i);
 const sensorIds = ['I1', 'I2', 'I3', 'I4', 'I5', 'I6'];
@@ -31,7 +31,7 @@ const nameLabels = new Set(['rack', 'mast', 'belt', 'io']);
 const bySignal = new Map(signals.map(signal => [signal.id, signal]));
 const q = id => document.getElementById(id);
 function levelName(value) {
-  return value === 1 ? 'Høj (1)' : value === 0 ? 'Lav (0)' : 'Ingen måling';
+  return value === 1 ? 'High (1)' : value === 0 ? 'Low (0)' : 'No reading';
 }
 function svgElement(type, style) {
   const element = document.createElementNS('http://www.w3.org/2000/svg', type);
@@ -62,7 +62,7 @@ export function mountInspection({ warehouse, canvas, camera, invalidate, focusPa
     selectedPart = id;
     refresh();
   }
-  const groups = ['Maskindele', 'Sensorer og motorer'].map(label => {
+  const groups = ['Machine parts', 'Sensors and motors'].map(label => {
     const group = document.createElement('optgroup');
     group.label = label;
     picker.append(group);
@@ -111,22 +111,22 @@ export function mountInspection({ warehouse, canvas, camera, invalidate, focusPa
     if (info.hidden) return;
     q('part-name').textContent = part?.name || 'Portenta ' + id;
     q('part-description').textContent = part ? descriptions[part.id] :
-      digitalIds.includes(id) ? 'Vælg lagerklemmen til denne indgang for at se signalet på den tilsluttede del.' :
-      'Den analoge USB-indgang viser spændingen i signalmonitoren.';
+      digitalIds.includes(id) ? 'Select the warehouse terminal for this input to see its signal on the connected part.' :
+      'The signal monitor shows the voltage of the analog USB input.';
     const status = q('part-state');
     status.hidden = !id || (state.source === 'usb' && !digitalIds.includes(id));
     const level = state.levels[id];
     const sensorKnown = state.source === 'usb' && state.mapping[id] && level != null;
     const sensorOn = sensorKnown && level === state.activeLevels[id];
     let sensorText = '';
-    if (sensorKnown) sensorText = isBarrier(part?.id) ? (sensorOn ? 'Stråle brudt' : 'Stråle fri') : (sensorOn ? 'Aktiv' : 'Inaktiv');
-    status.textContent = id ? [id, levelName(level), sensorText].filter(Boolean).join(' · ') : '';
+    if (sensorKnown) sensorText = isBarrier(part?.id) ? (sensorOn ? 'Beam interrupted' : 'Beam clear') : (sensorOn ? 'Active' : 'Inactive');
+    status.textContent = id ? [id, levelName(level), sensorText].filter(Boolean).join(' Â· ') : '';
     status.toggleAttribute('data-linked', Boolean(sensorKnown));
     status.toggleAttribute('data-sensor-active', Boolean(sensorOn));
     status.dataset.level = level === 1 ? 'high' : level === 0 ? 'low' : 'unknown';
     q('focus-part').hidden = !part;
     q('map-part').hidden = state.source !== 'usb' || !digitalIds.includes(id);
-    q('map-part').textContent = part ? 'Skift tilknytning' : 'Tilknyt del';
+    q('map-part').textContent = part ? 'Change mapping' : 'Map part';
 
     const signature = [part?.id, state.source, ...digitalIds.map(raw => state.mapping[raw])].join('|');
     if (signature === detailSignalKey) return;
@@ -136,7 +136,7 @@ export function mountInspection({ warehouse, canvas, camera, invalidate, focusPa
       const signal = bySignal.get(code);
       const rawIds = digitalIds.filter(raw => state.mapping[raw] === code);
       const visibleIds = state.source === 'usb' ? rawIds : [code];
-      const legend = code + ' · klemme ' + signal.terminal;
+      const legend = code + ' Â· terminal ' + signal.terminal;
       if (!visibleIds.length) {
         const span = document.createElement('span');
         span.textContent = legend;
@@ -145,8 +145,8 @@ export function mountInspection({ warehouse, canvas, camera, invalidate, focusPa
       for (const visibleId of visibleIds) {
         const b = document.createElement('button');
         b.type = 'button';
-        b.textContent = (state.source === 'usb' ? visibleId + ' → ' : '') + legend;
-        b.title = 'Vis signalspor for ' + visibleId;
+        b.textContent = (state.source === 'usb' ? visibleId + ' â†’ ' : '') + legend;
+        b.title = 'Show signal trace for ' + visibleId;
         b.addEventListener('click', () => selectSignal(visibleId));
         fragment.append(b);
       }
@@ -173,12 +173,12 @@ export function mountInspection({ warehouse, canvas, camera, invalidate, focusPa
         button.toggleAttribute('data-sensor-active', sensorOn);
         button.dataset.level = level === 1 ? 'high' : level === 0 ? 'low' : 'unknown';
         button.setAttribute('aria-pressed', String(id === selectedChannel));
-        const hint = id + ' · ' + levelName(level) + (signal ? ' · ' + signal + ' · ' + parts.get(partId).name : ' · Ikke tilknyttet') + (sensorOn ? ' · Aktiv' : '');
+        const hint = id + ' Â· ' + levelName(level) + (signal ? ' Â· ' + signal + ' Â· ' + parts.get(partId).name : ' Â· Unmapped') + (sensorOn ? ' Â· Active' : '');
         button.title = hint;
         button.setAttribute('aria-label', hint);
       }
-      const count = digitalIds.some(id => state.mapping[id]) ? activeParts.size + (activeParts.size === 1 ? ' aktiv' : ' aktive') : high + (high === 1 ? ' høj' : ' høje');
-      q('digital-count').textContent = measured ? count : 'Ingen måling';
+      const count = digitalIds.some(id => state.mapping[id]) ? activeParts.size + ' active' : high + ' high';
+      q('digital-count').textContent = measured ? count : 'No reading';
     }
     currentLabels = [];
     for (const [id, item] of labels) {
@@ -204,12 +204,12 @@ export function mountInspection({ warehouse, canvas, camera, invalidate, focusPa
       item.button.toggleAttribute('data-selected', selected);
       const channels = currents || recent?.channels;
       const code = channels ? [...new Set(channels.map(raw => usb ? state.mapping[raw] : raw))].join(' + ') : selected ? selectedChannel : null;
-      const text = (code ? code + ' · ' : '') + item.part.name;
+      const text = (code ? code + ' Â· ' : '') + item.part.name;
       if (item.caption.textContent !== text) item.caption.textContent = text;
-      const action = currents ? (isBarrier(id) ? 'Stråle brudt' : 'Aktiv') : recent ? 'Netop aktiv' : '';
+      const action = currents ? (isBarrier(id) ? 'Beam interrupted' : 'Active') : recent ? 'Recently active' : '';
       item.status.hidden = !action;
       if (item.status.textContent !== action) item.status.textContent = action;
-      item.button.title = [text, action, usb ? channels?.join(' + ') : ''].filter(Boolean).join(' · ');
+      item.button.title = [text, action, usb ? channels?.join(' + ') : ''].filter(Boolean).join(' Â· ');
       item.button.setAttribute('aria-label', item.button.title);
       item.button.dataset.code = code || '';
       currentLabels.push(item);
@@ -296,7 +296,7 @@ export function mountInspection({ warehouse, canvas, camera, invalidate, focusPa
   markers.addEventListener('click', () => {
     namesVisible = !namesVisible;
     markers.setAttribute('aria-pressed', String(namesVisible));
-    markers.title = namesVisible ? 'Skjul komponentnavne' : 'Vis komponentnavne';
+    markers.title = namesVisible ? 'Hide part names' : 'Show part names';
     refresh();
   });
 

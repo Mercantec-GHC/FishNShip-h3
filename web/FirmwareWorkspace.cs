@@ -37,13 +37,13 @@ public sealed class FirmwareWorkspace(IWebHostEnvironment environment, IConfigur
 
     public IResult SaveSketch(SketchEdit edit)
     {
-        if (!enabled) return Results.BadRequest(new { message = "Start siden med .NET på Arduino-computeren for at gemme i projektet." });
-        if (!ValidCode(edit.Code)) return Results.BadRequest(new { message = "Skitsen mangler eller fylder for meget." });
+        if (!enabled) return Results.BadRequest(new { message = "Run the .NET app on the computer connected to the Arduino to save to the project." });
+        if (!ValidCode(edit.Code)) return Results.BadRequest(new { message = "The sketch is missing or too large." });
 
         lock (fileLock)
         {
             if (VersionOf(File.ReadAllText(sourceFile)) != edit.Version)
-                return Results.Conflict(new { message = "Demo.ino er ændret siden du åbnede siden. Kopiér dine ændringer og genindlæs filen." });
+                return Results.Conflict(new { message = "Demo.ino has changed since you opened this page. Copy your changes and reload the file." });
 
             var temp = sourceFile + "." + Guid.NewGuid().ToString("N") + ".tmp";
             try
@@ -70,7 +70,7 @@ public sealed class FirmwareWorkspace(IWebHostEnvironment environment, IConfigur
         }
         catch (Exception ex) when (ex is InvalidOperationException or Win32Exception or JsonException or OperationCanceledException)
         {
-            return Results.Problem(ex is Win32Exception ? "Arduino CLI blev ikke fundet." : "Kunne ikke finde Arduino-portene.", statusCode: 503);
+            return Results.Problem(ex is Win32Exception ? "Arduino CLI was not found." : "Could not find the Arduino ports.", statusCode: 503);
         }
     }
 
@@ -107,12 +107,12 @@ public sealed class FirmwareWorkspace(IWebHostEnvironment environment, IConfigur
         var canRun = enabled || (!upload && AllowsHostedCompile);
         if (!canRun || !ValidCode(edit.Code))
         {
-            await Finish(false, canRun ? "Skitsen mangler eller fylder for meget." : "Handlingen er kun tilgængelig på localhost.");
+            await Finish(false, canRun ? "The sketch is missing or too large." : "This operation is available only on localhost.");
             return;
         }
         if (!operation.Wait(0))
         {
-            await Finish(false, "Arduino CLI er allerede i gang med en kompilering eller upload.");
+            await Finish(false, "Arduino CLI is already compiling or uploading.");
             return;
         }
 
@@ -126,21 +126,21 @@ public sealed class FirmwareWorkspace(IWebHostEnvironment environment, IConfigur
             {
                 if (compiledVersion != version || !File.Exists(Path.Combine(BuildFolder, "Demo.ino.bin")))
                 {
-                    await Finish(false, "Kompilér den aktuelle kode før upload.");
+                    await Finish(false, "Compile the current sketch before uploading.");
                     return;
                 }
 
-                await Log("Kontrollerer at Portenta stadig er tilsluttet…");
+                await Log("Checking that the Portenta is still connected…");
                 var ports = await DetectPorts(timeout.Token);
                 if (ports.Length != 1 || ports[0] != edit.Port)
                 {
-                    await Finish(false, "Tilslut én Portenta H7, opdatér portlisten, og vælg dens port igen.");
+                    await Finish(false, "Connect one Portenta H7, refresh the port list and select its port again.");
                     return;
                 }
                 // The core selects the DFU device by USB vendor/product ID after the serial reset.
-                await Log($"Uploader til Portenta H7 på {ports[0]}…");
+                await Log($"Uploading to Portenta H7 on {ports[0]}…");
                 var result = await Invoke(["upload", "--fqbn", BuildBoard, "--port", ports[0], "--input-dir", BuildFolder, DraftFolder], Log, timeout.Token);
-                await Finish(result == 0, result == 0 ? "Upload færdig. Tilslut Arduino igen for at læse Serial." : "Upload mislykkedes. Se loggen ovenfor.");
+                await Finish(result == 0, result == 0 ? "Upload complete. Reconnect the Arduino to read serial output." : "Upload failed. See the log above.");
             }
             else
             {
@@ -150,20 +150,20 @@ public sealed class FirmwareWorkspace(IWebHostEnvironment environment, IConfigur
                 var build = hostedBuild is null ? BuildFolder : Path.Combine(hostedBuild.FullName, "build");
                 Directory.CreateDirectory(draft);
                 await File.WriteAllTextAsync(Path.Combine(draft, "Demo.ino"), edit.Code!, timeout.Token);
-                await Log("Kompilerer til Arduino Portenta H7 (M7)…");
+                await Log("Compiling for Arduino Portenta H7 (M7)…");
                 var result = await Invoke(["compile", "--fqbn", BuildBoard, "--jobs", hostedBuild is null ? "8" : "2", "--build-path", build, "--verbose", draft], Log, timeout.Token, temporaryDirectory: hostedBuild?.FullName);
                 var binary = new FileInfo(Path.Combine(build, "Demo.ino.bin"));
                 var success = result == 0 && binary.Exists && binary.Length is > 0 and <= MaxFirmwareLength;
                 if (success && hostedBuild is null) compiledVersion = version;
                 var package = success && hostedBuild is not null ? CreateFirmwarePackage(binary.FullName, edit.Code!) : null;
-                await Finish(success, success ? "Kompilering lykkedes." : "Kompilering mislykkedes. Se loggen ovenfor.", package);
+                await Finish(success, success ? "Compilation succeeded." : "Compilation failed. See the log above.", package);
             }
         }
-        catch (Win32Exception) { await Finish(false, "Arduino CLI blev ikke fundet. Installér Arduino IDE eller sæt Arduino__CliPath."); }
-        catch (OperationCanceledException) { await Finish(false, "Arduino CLI blev afbrudt eller overskred tidsgrænsen."); }
+        catch (Win32Exception) { await Finish(false, "Arduino CLI was not found. Install Arduino IDE or set Arduino__CliPath."); }
+        catch (OperationCanceledException) { await Finish(false, "Arduino CLI was interrupted or timed out."); }
         catch (Exception ex) when (ex is IOException or InvalidOperationException or JsonException)
         {
-            await Finish(false, "Arduino CLI kunne ikke fuldføre handlingen. " + ex.Message);
+            await Finish(false, "Arduino CLI could not complete the operation. " + ex.Message);
         }
         finally
         {
@@ -182,7 +182,7 @@ public sealed class FirmwareWorkspace(IWebHostEnvironment environment, IConfigur
                 sketch.Write(code);
 
             using var uploader = typeof(FirmwareWorkspace).Assembly.GetManifestResourceStream("FishNShip.Upload.cmd")
-                ?? throw new InvalidOperationException("Upload.cmd mangler i serverens build.");
+                ?? throw new InvalidOperationException("Upload.cmd is missing from the server build.");
             using var template = new StreamReader(uploader);
             using var script = new StreamWriter(zip.CreateEntry("Upload.cmd").Open());
             script.Write(template.ReadToEnd().ReplaceLineEndings("\r\n"));
@@ -194,7 +194,7 @@ public sealed class FirmwareWorkspace(IWebHostEnvironment environment, IConfigur
     {
         var output = new StringBuilder();
         var result = await Invoke(["board", "list", "--json"], line => { output.AppendLine(line); return Task.CompletedTask; }, token, readErrors: false);
-        if (result != 0) throw new InvalidOperationException("Arduino CLI kunne ikke læse USB-portene.");
+        if (result != 0) throw new InvalidOperationException("Arduino CLI could not read the USB ports.");
 
         using var json = JsonDocument.Parse(output.ToString());
         if (!json.RootElement.TryGetProperty("detected_ports", out var ports) || ports.ValueKind != JsonValueKind.Array) return [];

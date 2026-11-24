@@ -6,13 +6,13 @@ const demoGroups = {
   outputs: signals.filter(signal => signal.group === 'output'),
 };
 const portentaGroups = {
-  inputs: Array.from({ length: 8 }, (_, index) => ({ id: `DI${index}`, index, label: 'Digital indgang' })),
-  outputs: Array.from({ length: 3 }, (_, index) => ({ id: `AI${index}`, index, label: 'Analog indgang', analog: true })),
+  inputs: Array.from({ length: 8 }, (_, index) => ({ id: `DI${index}`, index, label: 'Digital input' })),
+  outputs: Array.from({ length: 3 }, (_, index) => ({ id: `AI${index}`, index, label: 'Analog input', analog: true })),
 };
 const pdfInputs = new Map(demoGroups.inputs.map(channel => [channel.id, channel]));
 const wiringKey = 'fishnship.536631.wiring.v1.';
 const polarityKey = 'fishnship.536631.polarity.v1.';
-const voltage = new Intl.NumberFormat('da-DK', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+const voltage = new Intl.NumberFormat('en-GB', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
 const windowSeconds = 5;
 const windowWidth = 280;
 
@@ -164,7 +164,7 @@ export function mountSignalPanel({ onSourceChange, onSelectSignal, onDigitalStat
   function openWiring(open) {
     wiringEditor.hidden = !open;
     toggleWiring.setAttribute('aria-expanded', String(open));
-    setText(toggleWiring, open ? 'Luk tilknytning' : 'Tilknyt indgange');
+    setText(toggleWiring, open ? 'Close input mapping' : 'Map inputs');
   }
 
   function applyWiring(next, announce = '') {
@@ -189,29 +189,29 @@ export function mountSignalPanel({ onSourceChange, onSelectSignal, onDigitalStat
     name.textContent = id;
     const select = document.createElement('select');
     select.id = 'wiring-' + id;
-    select.setAttribute('aria-label', `Klemme til ${id}`);
-    select.add(new Option('Ikke tilknyttet', ''));
+    select.setAttribute('aria-label', `Terminal for ${id}`);
+    select.add(new Option('Unmapped', ''));
     for (const input of pdfInputs.values()) {
-      select.add(new Option(`${input.id} · ${input.label} · kl. ${input.terminal}`, input.id));
+      select.add(new Option(`${input.id} · ${input.label} · terminal ${input.terminal}`, input.id));
     }
     select.value = mapping[id] ?? '';
     const active = document.createElement('select');
     active.id = 'wiring-active-' + id;
     active.className = 'wiring-polarity';
-    active.setAttribute('aria-label', `Aktivt niveau for ${id}`);
-    active.add(new Option('Aktiv ved 0', '0'));
-    active.add(new Option('Aktiv ved 1', '1'));
+    active.setAttribute('aria-label', `Active level for ${id}`);
+    active.add(new Option('Active at 0', '0'));
+    active.add(new Option('Active at 1', '1'));
     active.value = String(activeLevels[id]);
     active.disabled = !mapping[id];
     select.addEventListener('change', () => {
       const next = select.value || null;
       const level = activeLevelFor(id, next);
-      let message = next ? `${id} er knyttet til ${next}. Sensoren er aktiv ved ${level}.` : `Tilknytningen for ${id} er fjernet.`;
+      let message = next ? `${id} mapped to ${next}. The sensor is active at ${level}.` : `Mapping removed for ${id}.`;
       try {
         if (next) localStorage.setItem(wiringKey + id, next);
         else localStorage.removeItem(wiringKey + id);
       } catch {
-        message += ' Browseren kunne kun gemme ændringen for denne visning.';
+        message += ' This change could only be saved for the current session.';
       }
       applyWiring({ mapping: { ...mapping, [id]: next }, activeLevels: { ...activeLevels, [id]: level } }, message);
     });
@@ -219,9 +219,9 @@ export function mountSignalPanel({ onSourceChange, onSelectSignal, onDigitalStat
       const signal = mapping[id];
       if (!signal) return;
       const level = Number(active.value);
-      let message = `${signal} er aktiv, når ${id} er ${level}.`;
+      let message = `${signal} is active when ${id} is ${level}.`;
       try { localStorage.setItem(polarityKey + id + '.' + signal, String(level)); } catch {
-        message += ' Browseren kunne kun gemme ændringen for denne visning.';
+        message += ' This change could only be saved for the current session.';
       }
       applyWiring({ mapping, activeLevels: { ...activeLevels, [id]: level } }, message);
     });
@@ -238,8 +238,8 @@ export function mountSignalPanel({ onSourceChange, onSelectSignal, onDigitalStat
     const id = selected[source][activeTab[source]];
     const channel = rows.get(id).channel;
     setText(scopeLabel, `${id} · 5 s`);
-    const description = channel.analog ? 'Skala 0 til 10 volt.' : 'Nederst er 0, øverst er 1.';
-    plot.setAttribute('aria-label', `${id}, de seneste fem sekunder frem til nu. ${description}`);
+    const description = channel.analog ? 'Range: 0 to 10 volts.' : 'The bottom is 0 and the top is 1.';
+    plot.setAttribute('aria-label', `${id} over the last five seconds. ${description}`);
     if (source === 'demo') {
       trace.setAttribute('d', demoTrace(id, demo.elapsed, demo.signals[id]));
       lastPlotTime = demo.elapsed;
@@ -263,8 +263,8 @@ export function mountSignalPanel({ onSourceChange, onSelectSignal, onDigitalStat
       activeBadge.hidden = !isSensorActive;
       if (live && !channel.analog) {
         const linked = pdfInputs.get(mapping[channel.id]);
-        label = linked ? `${linked.id} · ${linked.label}` : 'Ikke tilknyttet';
-        button.title = linked ? `${linked.id} · Klemme ${linked.terminal} · Aktiv ved ${activeLevels[channel.id]}` : 'Portenta-indgang uden tilknyttet klemme';
+        label = linked ? `${linked.id} · ${linked.label}` : 'Unmapped';
+        button.title = linked ? `${linked.id} · Terminal ${linked.terminal} · Active at ${activeLevels[channel.id]}` : 'Portenta input with no mapped terminal';
       }
       if (channel.analog) {
         const volts = usb.frame?.analog[channel.index];
@@ -272,7 +272,7 @@ export function mountSignalPanel({ onSourceChange, onSelectSignal, onDigitalStat
         const state = voltageStatus(volts, raw);
         if (raw !== undefined) label = `ADC ${raw} / 65535`;
         if (state === 'valid') display = `${voltage.format(volts)} V`;
-        if (state === 'saturated') display = 'Mættet';
+        if (state === 'saturated') display = 'Saturated';
         if (state === 'overrange') display = '> 10 V';
         missing = state === 'missing';
       }
@@ -314,13 +314,13 @@ export function mountSignalPanel({ onSourceChange, onSelectSignal, onDigitalStat
       led.setAttribute('aria-hidden', 'true');
       const activeBadge = document.createElement('span');
       activeBadge.className = 'channel-active';
-      activeBadge.textContent = 'Aktiv';
+      activeBadge.textContent = 'Active';
       activeBadge.hidden = true;
       const reading = document.createElement('span');
       reading.className = 'channel-reading';
       value.append(activeBadge, led, reading);
       button.append(code, name, value);
-      if (channel.terminal) button.title = `Klemme ${channel.terminal}${channel.motor ? ' · ' + channel.motor : ''}`;
+      if (channel.terminal) button.title = `Terminal ${channel.terminal}${channel.motor ? ' · ' + channel.motor : ''}`;
       button.addEventListener('click', () => chooseChannel(channel.id, 'user'));
       fragment.append(button);
       rows.set(channel.id, { button, name, reading, activeBadge, channel });
@@ -329,7 +329,7 @@ export function mountSignalPanel({ onSourceChange, onSelectSignal, onDigitalStat
     list.scrollTop = 0;
     for (const tab of tabs) {
       const first = tab.dataset.tab === 'inputs';
-      setText(tab, source === 'demo' ? (first ? 'Indgange' : 'Udgange') : (first ? 'Digitale' : 'Analoge'));
+      setText(tab, source === 'demo' ? (first ? 'Inputs' : 'Outputs') : (first ? 'Digital' : 'Analog'));
       tab.setAttribute('aria-pressed', String(tab.dataset.tab === group));
     }
     renderRows();
@@ -357,11 +357,11 @@ export function mountSignalPanel({ onSourceChange, onSelectSignal, onDigitalStat
   function renderStatus() {
     if (source === 'demo') {
       statusLamp.dataset.mode = playing ? 'demo' : 'idle';
-      setText(status, playing ? 'Simulerede signaler' : 'Demo på pause');
+      setText(status, playing ? 'Simulated signals' : 'Demo paused');
       return;
     }
     statusLamp.dataset.mode = usb.phase === 'live' ? 'live' : 'idle';
-    setText(status, usb.phase === 'live' ? 'Målinger fra Portenta' : 'Ingen aktuelle målinger');
+    setText(status, usb.phase === 'live' ? 'Portenta readings' : 'No current readings');
     setText(usbMessage, usb.message);
     connect.hidden = !usb.canChoose;
     reconnect.hidden = !usb.canReconnect;

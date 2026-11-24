@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="da">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f6f8fa">
-  <meta name="description" content="Udforsk fischertechniks højreollager i 3D og følg signaler fra en Portenta via USB.">
-  <title>Højreollager 24V · FishNShip</title>
+  <meta name="description" content="Explore the fischertechnik high-bay warehouse in 3D and monitor Portenta signals over USB.">
+  <title>High-bay warehouse 24V · FishNShip</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="/three/viewer.css">
   <script type="module" src="/three/viewer.js"></script>
@@ -14,62 +14,62 @@
   <svg aria-hidden="true" class="sprite" xmlns="http://www.w3.org/2000/svg"><defs><symbol id="i-cube" viewBox="0 0 24 24"><path d="m12 2.5 8.5 4.9v9.2L12 21.5l-8.5-4.9V7.4L12 2.5Z M3.8 7.6l8.2 4.7 8.2-4.7 M12 12.3v8.8"/></symbol><symbol id="i-code" viewBox="0 0 24 24"><path d="m8 7-5 5 5 5m8-10 5 5-5 5m-3-14-2 18"/></symbol><symbol id="i-book" viewBox="0 0 24 24"><path d="M5 3.5h10l4 4V21H5z M14 3.5V9h5 M8.5 13h7m-7 4h6"/></symbol><symbol id="i-arrow" viewBox="0 0 24 24"><path d="M7 17 17 7M7 7h10v10"/></symbol><symbol id="i-wave" viewBox="0 0 24 24"><path d="M2 13h4l2.5-7 4.5 13 3.3-9 1.7 3h4"/></symbol><symbol id="i-play" viewBox="0 0 24 24"><path d="m7 4.5 12 7.5-12 7.5z" fill="currentColor" stroke="none"/></symbol><symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5v14m8-14v14" stroke-width="4"/></symbol><symbol id="i-reset" viewBox="0 0 24 24"><path d="M3 10a9 9 0 1 1 1.6 7.2M3 4v6h6"/></symbol><symbol id="i-camera" viewBox="0 0 24 24"><path d="M3 7h4l2-3h6l2 3h4v13H3z"/><circle cx="12" cy="13" r="3.3"/></symbol><symbol id="i-angle" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></symbol><symbol id="i-mouse" viewBox="0 0 24 24"><rect x="6" y="2.5" width="12" height="19" rx="6"/><path d="M12 3v7"/></symbol><symbol id="i-expand" viewBox="0 0 24 24"><path d="M3 9V3h6m6 0h6v6m0 6v6h-6m-6 0H3v-6"/></symbol><symbol id="i-labels" viewBox="0 0 24 24"><path d="M3 4h8l9 9-7 7-10-10z"/><circle cx="7.6" cy="8.3" r="1"/></symbol><symbol id="i-zoomin" viewBox="0 0 24 24"><circle cx="10" cy="10" r="6.2"/><path d="m15 15 6 6M7 10h6m-3-3v6"/></symbol><symbol id="i-zoomout" viewBox="0 0 24 24"><circle cx="10" cy="10" r="6.2"/><path d="m15 15 6 6M7 10h6"/></symbol><symbol id="i-usb" viewBox="0 0 24 24"><path d="M12 20V4m-3 2 3-3 3 3M12 14l-5-4V7m5 11 6-5V9"/><circle cx="12" cy="20" r="1.5"/><circle cx="7" cy="6" r="1.1"/><path d="M16.5 7.5h3v3h-3z"/></symbol><symbol id="i-stack" viewBox="0 0 24 24"><path d="m3 8 9-5 9 5-9 5zM3 12l9 5 9-5m-18 5 9 5 9-5"/></symbol><symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 4.5 1.6c-.6.7-2 1.2-2 3m0 2v.3"/></symbol><symbol id="i-contract" viewBox="0 0 24 24"><path d="M9 3v6H3m18 0h-6V3m0 18v-6h6M3 15h6v6"/></symbol></defs></svg>
   <header class="mast"><div class="mast-inner">
     <a class="wordmark" href="/">FishNShip</a>
-    <nav aria-label="FishNShip"><a href="/"><svg class="icon" aria-hidden="true"><use href="#i-code"/></svg>Arduino-værktøj</a><a href="/three" aria-current="page"><svg class="icon" aria-hidden="true"><use href="#i-cube"/></svg>3D-model</a></nav>
-    <a class="document" href="https://fiproductmedia.azureedge.net/media/Certification%20Documents/Technical%20Datasheets/fischertechnik/TDB_536631-AUTOMATISIERTES_HOCHREGAL_24V.pdf" target="_blank" rel="noopener"><svg class="icon" aria-hidden="true"><use href="#i-book"/></svg>Datablad<svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+    <nav aria-label="FishNShip"><a href="/"><svg class="icon" aria-hidden="true"><use href="#i-code"/></svg>Arduino tools</a><a href="/three" aria-current="page"><svg class="icon" aria-hidden="true"><use href="#i-cube"/></svg>3D model</a></nav>
+    <a class="document" href="https://fiproductmedia.azureedge.net/media/Certification%20Documents/Technical%20Datasheets/fischertechnik/TDB_536631-AUTOMATISIERTES_HOCHREGAL_24V.pdf" target="_blank" rel="noopener"><svg class="icon" aria-hidden="true"><use href="#i-book"/></svg>Data sheet<svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
   </div></header>
   <main class="shell">
     <div class="headline">
-      <div><h1>Højreollager <span>24V</span></h1><p>fischertechnik <span class="model-number">536631</span><span class="separator"></span>Automatisiertes Hochregallager</p></div>
-      <span class="capacity"><svg class="icon" aria-hidden="true"><use href="#i-stack"/></svg> 3 × 3 lagerpladser</span>
+      <div><h1>High-bay warehouse <span>24V</span></h1><p>fischertechnik <span class="model-number">536631</span><span class="separator"></span>Automated high-bay warehouse</p></div>
+      <span class="capacity"><svg class="icon" aria-hidden="true"><use href="#i-stack"/></svg> 3 × 3 storage bays</span>
     </div>
     <div class="workspace" id="workspace">
-      <section class="viewer" aria-label="Interaktiv maskinmodel">
+      <section class="viewer" aria-label="Interactive machine model">
         <div class="stage" id="stage">
           <div class="stage-tools">
-            <div class="view-picker"><svg class="icon" aria-hidden="true"><use href="#i-cube"/></svg><select id="view" aria-label="Kameravinkel"><option value="perspective">Perspektiv</option><option value="front">Forfra</option><option value="side">Fra siden</option><option value="top">Oppefra</option></select><svg class="icon" aria-hidden="true"><use href="#i-angle"/></svg></div>
+            <div class="view-picker"><svg class="icon" aria-hidden="true"><use href="#i-cube"/></svg><select id="view" aria-label="Camera view"><option value="perspective">Perspective</option><option value="front">Front</option><option value="side">Side</option><option value="top">Top</option></select><svg class="icon" aria-hidden="true"><use href="#i-angle"/></svg></div>
             <div class="stage-actions">
-              <label class="part-picker"><span class="sr-only">Vis en del i modellen</span><select id="part-picker" aria-label="Vis en del i modellen"><option value="">Vælg del</option></select></label>
-              <button class="canvas-btn" id="markers" type="button" title="Vis komponentnavne" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-labels"/></svg><span>Navne</span></button>
-              <button class="canvas-btn square" id="fullscreen" type="button" aria-label="Fuld skærm med signalmonitor" title="Fuld skærm med signalmonitor" aria-controls="workspace" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-expand"/></svg></button>
+              <label class="part-picker"><span class="sr-only">Show a part on the model</span><select id="part-picker" aria-label="Show a part on the model"><option value="">Select part</option></select></label>
+              <button class="canvas-btn" id="markers" type="button" title="Show part names" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-labels"/></svg><span>Names</span></button>
+              <button class="canvas-btn square" id="fullscreen" type="button" aria-label="Full screen with signal monitor" title="Full screen with signal monitor" aria-controls="workspace" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-expand"/></svg></button>
             </div>
           </div>
-          <canvas id="machine" tabindex="0" aria-label="3D-model af højreollageret. Klik på en del, eller vælg den i listen Vælg del. Træk for at dreje. Brug piletasterne for at gå rundt og plus eller minus for at zoome."></canvas>
-          <div id="annotations" aria-label="Dele på modellen"><svg id="part-leaders" aria-hidden="true"></svg></div>
-          <p class="render-message" id="render-message" role="status">Indlæser 3D-modellen…</p>
+          <canvas id="machine" tabindex="0" aria-label="3D warehouse model. Click a part or choose it from Select part. Drag to rotate, use the arrow keys to orbit and press plus or minus to zoom."></canvas>
+          <div id="annotations" aria-label="Model parts"><svg id="part-leaders" aria-hidden="true"></svg></div>
+          <p class="render-message" id="render-message" role="status">Loading 3D model…</p>
           <div class="stage-bottom">
             <div id="live-strip" hidden>
-              <div class="strip-title"><strong>Portenta DI</strong><span id="digital-count">Ingen måling</span></div>
-              <div id="stage-inputs" role="group" aria-label="Digitale USB-indgange i tegningen"></div>
+              <div class="strip-title"><strong>Portenta DI</strong><span id="digital-count">No reading</span></div>
+              <div id="stage-inputs" role="group" aria-label="Digital USB inputs on the model"></div>
             </div>
-            <div class="orbit-help"><button id="show-help" type="button" title="Kamerabetjening" aria-expanded="false" aria-controls="help"><svg class="icon" aria-hidden="true"><use href="#i-mouse"/></svg><span>Træk for at dreje</span><svg class="icon" aria-hidden="true"><use href="#i-angle"/></svg></button><div id="help" hidden>Klik på en del for at undersøge den. Træk for at dreje. Rul for at zoome. Højretræk for at panorere. På touch kan du zoome og panorere med to fingre. Med fokus på modellen kan du bruge piletasterne og +/−.</div></div>
-            <div class="zoom-tools"><button id="zoom-out" type="button" aria-label="Zoom ud" title="Zoom ud"><svg class="icon" aria-hidden="true"><use href="#i-zoomout"/></svg></button><button id="zoom-in" type="button" aria-label="Zoom ind" title="Zoom ind"><svg class="icon" aria-hidden="true"><use href="#i-zoomin"/></svg></button><button id="reset-view" type="button" aria-label="Nulstil kamera" title="Nulstil kamera"><svg class="icon" aria-hidden="true"><use href="#i-reset"/></svg></button></div>
+            <div class="orbit-help"><button id="show-help" type="button" title="Camera controls" aria-expanded="false" aria-controls="help"><svg class="icon" aria-hidden="true"><use href="#i-mouse"/></svg><span>Drag to rotate</span><svg class="icon" aria-hidden="true"><use href="#i-angle"/></svg></button><div id="help" hidden>Click a part to inspect it. Drag to rotate, scroll to zoom and right-drag to pan. On touchscreens, use two fingers to zoom and pan. With the model focused, use the arrow keys to rotate and +/− to zoom.</div></div>
+            <div class="zoom-tools"><button id="zoom-out" type="button" aria-label="Zoom out" title="Zoom out"><svg class="icon" aria-hidden="true"><use href="#i-zoomout"/></svg></button><button id="zoom-in" type="button" aria-label="Zoom in" title="Zoom in"><svg class="icon" aria-hidden="true"><use href="#i-zoomin"/></svg></button><button id="reset-view" type="button" aria-label="Reset camera" title="Reset camera"><svg class="icon" aria-hidden="true"><use href="#i-reset"/></svg></button></div>
           </div>
         </div>
         <div class="transport" id="transport">
-          <button id="play" class="play" aria-label="Sæt demo på pause" type="button"><svg class="icon" aria-hidden="true"><use href="#i-pause"/></svg></button>
-          <div class="operation"><span class="field-label">Democyklus</span><strong id="operation">Indlagring</strong></div>
-          <label class="timeline"><span class="sr-only">Position i democyklussen</span><input type="range" id="seek" min="0" max="1000" step="1" value="0"><span id="clock">00:00</span></label>
+          <button id="play" class="play" aria-label="Pause demo" type="button"><svg class="icon" aria-hidden="true"><use href="#i-pause"/></svg></button>
+          <div class="operation"><span class="field-label">Demo cycle</span><strong id="operation">Storage</strong></div>
+          <label class="timeline"><span class="sr-only">Demo cycle position</span><input type="range" id="seek" min="0" max="1000" step="1" value="0"><span id="clock">00:00</span></label>
         </div>
-        <div class="transport hardware-caption" id="hardware-caption" hidden><svg class="icon" aria-hidden="true"><use href="#i-usb"/></svg><div><span class="field-label">USB live</span><strong>Digitale indgange</strong></div><small>En aktiv sensor lyser grønt på modellen. Vælg dens Portenta-kanal under <b>Tilknyt indgange</b>.</small></div>
-        <section id="part-info" aria-label="Valgt del" hidden>
+        <div class="transport hardware-caption" id="hardware-caption" hidden><svg class="icon" aria-hidden="true"><use href="#i-usb"/></svg><div><span class="field-label">USB live</span><strong>Digital inputs</strong></div><small>Active sensors glow green on the model. Select the corresponding Portenta channel under <b>Map inputs</b>.</small></div>
+        <section id="part-info" aria-label="Selected part" hidden>
           <div class="part-copy"><div class="part-heading"><strong id="part-name"></strong><span id="part-state"></span></div><p id="part-description"></p><div id="part-signals"></div></div>
-          <div class="part-actions"><button type="button" id="focus-part">Vis tæt på</button><button type="button" id="map-part" hidden>Tilknyt del</button><button type="button" id="close-part" aria-label="Luk delvisning" title="Luk delvisning">×</button></div>
+          <div class="part-actions"><button type="button" id="focus-part">Zoom to part</button><button type="button" id="map-part" hidden>Map part</button><button type="button" id="close-part" aria-label="Close part details" title="Close part details">×</button></div>
         </section>
       </section>
       <aside class="monitor" aria-labelledby="monitor-title">
-        <div class="monitor-head"><svg class="icon" aria-hidden="true"><use href="#i-wave"/></svg><h2 id="monitor-title">Signalmonitor</h2></div>
-        <div class="sources" role="group" aria-label="Signalkilde"><button data-source="demo" aria-pressed="true" type="button"><svg class="icon" aria-hidden="true"><use href="#i-play"/></svg>Demo</button><button data-source="usb" aria-pressed="false" type="button"><svg class="icon" aria-hidden="true"><use href="#i-usb"/></svg>USB live</button></div>
+        <div class="monitor-head"><svg class="icon" aria-hidden="true"><use href="#i-wave"/></svg><h2 id="monitor-title">Signal monitor</h2></div>
+        <div class="sources" role="group" aria-label="Signal source"><button data-source="demo" aria-pressed="true" type="button"><svg class="icon" aria-hidden="true"><use href="#i-play"/></svg>Demo</button><button data-source="usb" aria-pressed="false" type="button"><svg class="icon" aria-hidden="true"><use href="#i-usb"/></svg>USB live</button></div>
         <div class="monitor-body">
-          <div id="usb-setup" hidden><p id="usb-message" role="status"></p><div class="usb-actions"><button id="connect" type="button">Vælg Arduino</button><button id="reconnect" type="button">Forbind igen</button><button id="disconnect" type="button">Afbryd</button></div></div>
-          <div class="tabs" role="group" aria-label="Signalgruppe"><button data-tab="inputs" type="button" aria-pressed="true">Indgange</button><button data-tab="outputs" type="button" aria-pressed="false">Udgange</button></div>
-          <div id="wiring-tools" hidden><button id="toggle-wiring" type="button" aria-expanded="false" aria-controls="wiring-editor">Tilknyt indgange</button><div id="wiring-editor" hidden><p>Vælg lagerklemmen og det rå niveau, der betyder aktiv. På standardlageret skifter I2 og I3 til 0, når lysstrålen brydes. Valget gemmes i denne browser.</p><div id="wiring-fields"></div><p id="wiring-status" role="status"></p></div></div>
-          <div id="channel-list" aria-label="Signalværdier"></div>
-          <div class="scope"><div class="scope-heading"><span>Signalspor</span><b id="scope-label"></b></div><svg id="scope-plot" viewBox="0 0 280 49" preserveAspectRatio="none" role="img" aria-label="Historik for det valgte signal"><path class="scope-grid" d="M0 9h280M0 25h280M0 41h280M40 0v49m50-49v49m50-49v49m50-49v49m50-49v49"/><path id="trace"/></svg></div>
+          <div id="usb-setup" hidden><p id="usb-message" role="status"></p><div class="usb-actions"><button id="connect" type="button">Select Arduino</button><button id="reconnect" type="button">Reconnect</button><button id="disconnect" type="button">Disconnect</button></div></div>
+          <div class="tabs" role="group" aria-label="Signal group"><button data-tab="inputs" type="button" aria-pressed="true">Inputs</button><button data-tab="outputs" type="button" aria-pressed="false">Outputs</button></div>
+          <div id="wiring-tools" hidden><button id="toggle-wiring" type="button" aria-expanded="false" aria-controls="wiring-editor">Map inputs</button><div id="wiring-editor" hidden><p>Choose the warehouse terminal and the raw level that indicates activation. On the standard warehouse, I2 and I3 go low when the beam is interrupted. Settings are saved in this browser.</p><div id="wiring-fields"></div><p id="wiring-status" role="status"></p></div></div>
+          <div id="channel-list" aria-label="Signal values"></div>
+          <div class="scope"><div class="scope-heading"><span>Signal trace</span><b id="scope-label"></b></div><svg id="scope-plot" viewBox="0 0 280 49" preserveAspectRatio="none" role="img" aria-label="History of the selected signal"><path class="scope-grid" d="M0 9h280M0 25h280M0 41h280M40 0v49m50-49v49m50-49v49m50-49v49m50-49v49"/><path id="trace"/></svg></div>
         </div>
-        <div class="monitor-footer"><span id="status-lamp" class="lamp"></span><span id="monitor-status">Simulerede signaler</span></div>
+        <div class="monitor-footer"><span id="status-lamp" class="lamp"></span><span id="monitor-status">Simulated signals</span></div>
       </aside>
     </div>
-    <noscript>Slå JavaScript til for at se modellen og signalerne.</noscript>
+    <noscript>Enable JavaScript to view the model and signals.</noscript>
   </main>
 </body>
 </html>

@@ -347,7 +347,7 @@ function opticalIndications(root) {
   function add(id, z) {
     const indication = new THREE.Group();
     indication.position.set(transferX, gateLensHeight, z);
-    indication.name = 'Lysvej · ' + id;
+    indication.name = 'Beam path · ' + id;
     indication.visible = false;
     root.add(indication);
     const touchTargets = [];
@@ -641,57 +641,57 @@ function partRegistry(root) {
 
 export function createWarehouse() {
   const group = new THREE.Group();
-  group.name = 'Automatisiertes Hochregallager 24V · 536631';
+  group.name = 'Automated high-bay warehouse 24V · 536631';
   const m = materials();
   const optical = opticalIndications(group);
   const registry = partRegistry(group);
   const { component, attach } = registry;
-  table(component('base', 'Bundplade', group, [-2.70, 0.13, 1.58]), m);
-  const rack = component('rack', 'Lagerreol', group, [slotX(2.75), slotY(2) + 0.10, rackZ - 0.05]);
+  table(component('base', 'Baseplate', group, [-2.70, 0.13, 1.58]), m);
+  const rack = component('rack', 'Storage rack', group, [slotX(2.75), slotY(2) + 0.10, rackZ - 0.05]);
   shelves(rack, m);
-  driveRails(component('rail', 'Køreskinner og spindel', group, [0.04, 0.425, 0.97]), m);
-  horizontalMotor(component('drive-x', 'Vandret enkodermotor', group, [-2.14, 0.57, 0.94], ['B1','B2','Q3','Q4']), m);
+  driveRails(component('rail', 'Guide rails and spindle', group, [0.04, 0.425, 0.97]), m);
+  horizontalMotor(component('drive-x', 'Horizontal encoder motor', group, [-2.14, 0.57, 0.94], ['B1','B2','Q3','Q4']), m);
   const horizontalStop = [2.215, 0.400, 1.19];
-  limitSwitch(component('reference-x', 'Vandret referencekontakt', group, horizontalStop, ['I1']), m, ...horizontalStop);
-  conveyor(component('belt', 'Transportbånd', group, [transferX + 0.10, beltDeck + 0.10, -1.42]), m);
-  beltMotor(component('belt-motor', 'Båndmotor', group, [transferX - 0.435, beltDeck - 0.21, -1.36], ['Q1','Q2']), m);
+  limitSwitch(component('reference-x', 'Horizontal reference switch', group, horizontalStop, ['I1']), m, ...horizontalStop);
+  conveyor(component('belt', 'Conveyor', group, [transferX + 0.10, beltDeck + 0.10, -1.42]), m);
+  beltMotor(component('belt-motor', 'Conveyor motor', group, [transferX - 0.435, beltDeck - 0.21, -1.36], ['Q1','Q2']), m);
   for (const [id, name, z, signal] of [
-    ['inner-gate', 'Indre lysbom', -0.43, 'I2'], ['outer-gate', 'Ydre lysbom', -1.43, 'I3'],
+    ['inner-gate', 'Inner light barrier', -0.43, 'I2'], ['outer-gate', 'Outer light barrier', -1.43, 'I3'],
   ]) {
     opticalGate(component(id, name, group, [transferX - gateHeadOffset, gateLensHeight, z], [signal]), m, z);
     optical.add(id, z);
   }
   for (const [id, name, dy, signal] of [
-    ['reader-lower', 'Nederste sporsensor', 0.085, 'A1'], ['reader-upper', 'Øverste sporsensor', 0.156, 'A2'],
+    ['reader-lower', 'Lower track sensor', 0.085, 'A1'], ['reader-upper', 'Upper track sensor', 0.156, 'A2'],
   ]) {
     readerChannel(component(id, name, group, [transferX - 0.25, beltDeck + dy, -0.87], [signal]), m, dy);
   }
-  const io = component('io', 'I/O-kort', group, [-2.31, 0.46, -0.70]);
+  const io = component('io', 'I/O board', group, [-2.31, 0.46, -0.70]);
   electronics(io, m);
   boardSilkscreen(io);
   // Five parked carriers plus the red carrier in transit make six workpieces.
   for (const [column, level, color] of [[1,2,'red'],[3,1,'blue'],[1,1,'blue'],[2,0,'white'],[3,0,'white']]) {
     carrier(rack, m, slotX(column), slotY(level) + 0.012, rackZ, color);
   }
-  const screw = marker(group, 'Vandret gevindspindel', -1.832, 0.425, 0.970);
+  const screw = marker(group, 'Horizontal lead screw', -1.832, 0.425, 0.970);
   const screwParts = attach('rail', screw);
   screwParts.add(helicalThread(4.20, 0.068, 0.031, 0.065), m.redLight, 0, 0, 0);
-  const liftMast = marker(group, 'Regalbetjeningsenhed', transferX, 0, 0);
-  mast(component('mast', 'Løftemast', liftMast, [0.14, 2.91, 1.01]), m);
-  verticalMotor(component('drive-y', 'Lodret enkodermotor', liftMast, [0.24, 2.72, 1.06], ['B3','B4','Q5','Q6']), m);
+  const liftMast = marker(group, 'Stacker crane', transferX, 0, 0);
+  mast(component('mast', 'Lift mast', liftMast, [0.14, 2.91, 1.01]), m);
+  verticalMotor(component('drive-y', 'Vertical encoder motor', liftMast, [0.24, 2.72, 1.06], ['B3','B4','Q5','Q6']), m);
   const upperStop = [-0.272, 2.990, 0.614];
-  limitSwitch(component('reference-y', 'Lodret referencekontakt', liftMast, upperStop, ['I4']), m, ...upperStop);
-  const platform = marker(liftMast, 'Løftevogn', 0, beltDeck, 0);
-  carriage(component('carriage', 'Løftevogn', platform, [0, 0, 1.19]), m);
-  forkMotor(component('fork-motor', 'Gaffelmotor', platform, [-0.247, 0.105, 0.80], ['Q7','Q8']), m);
+  limitSwitch(component('reference-y', 'Vertical reference switch', liftMast, upperStop, ['I4']), m, ...upperStop);
+  const platform = marker(liftMast, 'Lift carriage', 0, beltDeck, 0);
+  carriage(component('carriage', 'Lift carriage', platform, [0, 0, 1.19]), m);
+  forkMotor(component('fork-motor', 'Fork motor', platform, [-0.247, 0.105, 0.80], ['Q7','Q8']), m);
   // Both microswitches are mounted on the moving carriage, one at each end of its slide.
   const forwardStop = [-0.230, 0.060, 0.306];
   const retractedStop = [0.237, 0.058, 0.687];
-  limitSwitch(component('fork-out', 'Gaffelkontakt · fremme', platform, forwardStop, ['I5']), m, ...forwardStop);
-  limitSwitch(component('fork-in', 'Gaffelkontakt · tilbage', platform, retractedStop, ['I6']), m, ...retractedStop);
-  const fork = marker(platform, 'Teleskopgaffel', 0, 0, 0);
-  const forkParts = component('fork', 'Teleskopgaffel', fork, [0.141, -0.017, forkRestZ]);
-  const extensionRails = marker(platform, 'Mellemslæde', 0, 0, 0);
+  limitSwitch(component('fork-out', 'Fork limit switch · extended', platform, forwardStop, ['I5']), m, ...forwardStop);
+  limitSwitch(component('fork-in', 'Fork limit switch · retracted', platform, retractedStop, ['I6']), m, ...retractedStop);
+  const fork = marker(platform, 'Telescopic fork', 0, 0, 0);
+  const forkParts = component('fork', 'Telescopic fork', fork, [0.141, -0.017, forkRestZ]);
+  const extensionRails = marker(platform, 'Intermediate slide', 0, 0, 0);
   const slides = attach('fork', extensionRails);
   for (const dx of [-0.14, 0.14]) {
     slides.box(m.steel, dx, -0.071, 0.54, 0.078, 0.052, 0.67);
@@ -701,10 +701,10 @@ export function createWarehouse() {
     forkParts.box(m.graphite, dx, -0.042, forkRestZ + 0.055, 0.09, 0.033, 0.426);
   }
   forkParts.box(m.red, 0, -0.040, forkRestZ + 0.285, 0.376, 0.094, 0.111, 0.011);
-  const load = marker(group, 'Rød emneholder', transferX, beltDeck, outerBeltZ);
-  const loadParts = component('carrier', 'Emneholder i transport', load, [0, 0.21, 0]);
+  const load = marker(group, 'Red workpiece carrier', transferX, beltDeck, outerBeltZ);
+  const loadParts = component('carrier', 'Carrier in transit', load, [0, 0.21, 0]);
   carrier(loadParts, m, 0, 0, 0, 'red');
-  const treads = marker(group, 'Transportbåndets ribber', 0, 0, 0);
+  const treads = marker(group, 'Conveyor belt ribs', 0, 0, 0);
   const treadParts = attach('belt', treads);
   for (let j = 0; j < 23; j++) {
     treadParts.box(m.graphite, transferX, beltDeck + 0.003, -1.58 + j * 0.061, j < 14 ? 0.402 : 0.086, 0.007, 0.010);

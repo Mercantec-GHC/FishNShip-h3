@@ -17,8 +17,8 @@ try {
   });
   $('#render-message').hidden = true;
 } catch (error) {
-  console.error('3D-modellen kunne ikke åbnes', error);
-  $('#render-message').textContent = '3D-modellen kræver WebGL 2. Slå hardwareacceleration til i browseren, og genindlæs siden.';
+  console.error('Could not open the 3D model', error);
+  $('#render-message').textContent = 'The 3D model requires WebGL 2. Enable hardware acceleration in your browser and reload the page.';
   for (const element of document.querySelectorAll('.stage-tools button:not(#fullscreen), .stage-tools select, .zoom-tools button')) element.disabled = true;
 }
 panel = mountSignalPanel({
@@ -34,7 +34,7 @@ panel = mountSignalPanel({
 const play = $('#play'), seek = $('#seek'), clock = $('#clock'), operation = $('#operation');
 function updateButton() {
   play.querySelector('use').setAttribute('href', playing ? '#i-pause' : '#i-play');
-  const label = playing ? 'Sæt demo på pause' : 'Afspil demo';
+  const label = playing ? 'Pause demo' : 'Play demo';
   play.setAttribute('aria-label', label);
   play.title = label;
 }
@@ -73,7 +73,7 @@ function syncFullscreen() {
   const expanded = document.fullscreenElement === workspace || inWindow;
   workspace.classList.toggle('is-expanded', expanded);
   for (const element of document.querySelectorAll('.mast, .headline')) element.inert = inWindow;
-  const label = expanded ? 'Afslut fuld skærm' : 'Fuld skærm med signalmonitor';
+  const label = expanded ? 'Exit full screen' : 'Full screen with signal monitor';
   full.querySelector('use').setAttribute('href', expanded ? '#i-contract' : '#i-expand');
   full.setAttribute('aria-pressed', String(expanded));
   full.setAttribute('aria-label', label);

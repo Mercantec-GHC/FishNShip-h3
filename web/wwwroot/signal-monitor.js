@@ -20,7 +20,7 @@ export function createSignalMonitor({ onLines } = {}) {
   const serial = navigator.serial;
   const listeners = new Set();
   let phase = serial ? 'disconnected' : 'unsupported';
-  let message = serial ? 'Ingen Arduino tilsluttet' : 'Brug Chrome eller Edge til Arduino via USB.';
+  let message = serial ? 'No Arduino connected' : 'Use Chrome or Edge to connect to Arduino via USB.';
   let frame = null;
   let connection = null;
   let lastPort;
@@ -69,8 +69,8 @@ export function createSignalMonitor({ onLines } = {}) {
     link.timer = setTimeout(() => {
       if (connection !== link || link.stopping) return;
       update('stale', link.receivedSerial
-        ? 'USB tilsluttet. Ingen nye DI0–DI7-målinger.'
-        : 'Ingen Arduino-data. Tjek skitsen og porten.');
+        ? 'USB connected. No new DI0–DI7 readings.'
+        : 'No Arduino data. Check the sketch and port.');
     }, 2500);
   }
 
@@ -92,7 +92,7 @@ export function createSignalMonitor({ onLines } = {}) {
         for (const line of lines) {
           const nextFrame = parseSignalFrame(line);
           if (!nextFrame) continue;
-          update('live', 'Arduino tilsluttet', nextFrame);
+          update('live', 'Arduino connected', nextFrame);
           waitForFrame(link);
         }
       }
@@ -104,8 +104,8 @@ export function createSignalMonitor({ onLines } = {}) {
       await link.port.close().catch(error => { link.closeError = error; });
       connection = null;
       update(failed || link.closeError ? 'error' : 'disconnected', failed || link.closeError
-        ? 'Arduino-forbindelsen blev afbrudt. Kontrollér USB-porten.'
-        : 'Arduino afbrudt.');
+        ? 'Arduino disconnected. Check the USB port.'
+        : 'Arduino disconnected.');
       void refreshPorts();
     }
   }
@@ -114,20 +114,20 @@ export function createSignalMonitor({ onLines } = {}) {
     if (!serial || attempt || connection) return;
     const currentAttempt = { cancelled: false };
     attempt = currentAttempt;
-    update('opening', 'Åbner USB-forbindelse…');
+    update('opening', 'Opening USB connection…');
     let port;
     let opened = false;
     try {
       port = choose ? await serial.requestPort() : reconnectPort();
       if (!port || currentAttempt.cancelled) {
-        update('disconnected', 'Ingen Arduino tilsluttet');
+        update('disconnected', 'No Arduino connected');
         return;
       }
       await port.open({ baudRate: 115200 });
       opened = true;
       if (currentAttempt.cancelled) {
         await port.close();
-        update('disconnected', 'Arduino afbrudt.');
+        update('disconnected', 'Arduino disconnected.');
         return;
       }
       const link = { port, reader: port.readable.getReader(), stopping: false };
@@ -135,13 +135,13 @@ export function createSignalMonitor({ onLines } = {}) {
       lastPort = port;
       link.reading = read(link);
       waitForFrame(link);
-      update('waiting', 'Venter på signaler fra Arduino…');
+      update('waiting', 'Waiting for signals from Arduino…');
     } catch (error) {
       if (opened) await port.close().catch(() => {});
       if (error.name === 'NotFoundError' || currentAttempt.cancelled) {
-        update('disconnected', 'Ingen Arduino tilsluttet');
+        update('disconnected', 'No Arduino connected');
       } else {
-        update('error', 'Porten kunne ikke åbnes. Luk Serial Monitor og prøv igen.');
+        update('error', 'Could not open the port. Close Serial Monitor and try again.');
       }
     } finally {
       attempt = null;
@@ -157,11 +157,11 @@ export function createSignalMonitor({ onLines } = {}) {
     if (!link.stopping) {
       link.stopping = true;
       clearTimeout(link.timer);
-      update('closing', 'Frigiver USB-porten…');
+      update('closing', 'Releasing USB port…');
       await link.reader.cancel().catch(() => {});
     }
     await link.reading;
-    if (link.closeError) throw new Error('USB-porten kunne ikke frigives. Tilslut Arduino igen.');
+    if (link.closeError) throw new Error('Could not release the USB port. Reconnect the Arduino.');
   }
 
   if (serial) {

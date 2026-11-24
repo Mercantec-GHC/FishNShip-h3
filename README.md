@@ -1,60 +1,50 @@
-# FishNShip-h3
+# FishNShip
 
-Arduino-værktøj til at redigere, kompilere og uploade kode til Portenta Machine Control og overvåge de digitale indgange via USB.
+FishNShip lets you edit Arduino sketches, compile and upload firmware to a Portenta Machine Control, and monitor the warehouse over USB. Use English for all website content and project documentation, including new features.
 
-## Start på localhost
+## Run locally
 
-Kør fra roden af repoet med .NET 10 SDK:
+From the repository root, run `dotnet run --project web/LagerDemo.csproj` with the .NET 10 SDK. Open [localhost:5080](http://localhost:5080/) in Chrome or Edge on the computer connected to the Portenta. Docker Desktop can also run the editor and browser-based monitoring with `docker compose up --build`.
 
-```sh
-dotnet run --project web/LagerDemo.csproj
-```
+## Monitor the physical warehouse
 
-Docker Desktop kan også køre editoren og overvågningen med `docker compose up --build`.
+1. Open `Demo/Demo.ino` in Arduino IDE. Select **Arduino Portenta H7**, choose **Main Core**, install the `Arduino_PortentaMachineControl` library and upload the sketch.
+2. Close Serial Monitor in Arduino IDE. In FishNShip, click **Select Arduino** and choose the USB port. Use **Reconnect** for a previously authorized device or **Disconnect** to release the port.
+3. Read sketch output in **Serial Monitor**. The digital input table shows the raw DI0–DI7 levels. The sketch reports all eight inputs together every 200 ms at 115200 baud. The browser reads them using Web Serial. If reports stop or the port disconnects, the table shows **No reading**.
 
-Åbn [localhost:5080](http://localhost:5080/). Siden åbner med kodeeditoren. Serial Monitor viser skitsens udskrifter, og tabellen viser DI0–DI7, så snart siden modtager en måling.
+The sketch also reports AI0–AI2 in volts using the Portenta’s 0–10 V mode. Older digital-only sketches still work. Keep analog inputs within 0–10 V. **Never connect a +24 V OUT sensor supply directly to an analog input.** On the warehouse connector, terminals 9 and 10 carry the lower and upper track sensor signals (A1 and A2). Check the physical wiring to identify the corresponding Portenta channels.
 
-## Se signaler fra den fysiske maskine
+## Edit, compile and upload
 
-1. Åbn `Demo/Demo.ino` i Arduino IDE. Vælg **Arduino Portenta H7** med **Main Core**, og brug biblioteket `Arduino_PortentaMachineControl`. Upload skitsen til jeres Portenta.
-2. Luk **Serial Monitor**, hvis den er åben. Åbn localhost i **Chrome eller Edge** på den computer, hvor Arduino er tilsluttet via USB.
-3. Klik **Vælg Arduino**, og vælg Portentas USB-port. Brug **Forbind igen** til en tidligere godkendt enhed og **Afbryd** til at frigive porten. Tabellen viser DI0–DI7 som rå `0`/`1`-niveauer. Sammenhold kanalnumrene med jeres faktiske ledningsføring.
+Open **Code and upload**. The C++ editor provides line numbers, Arduino completions, search and replace, and compiler diagnostics. **Save to project** (Ctrl+S) writes to `Demo/Demo.ino`. **Compile** (Ctrl+Enter) builds the current draft and streams compiler output. **Download .ino** downloads a copy, including on the hosted site.
 
-Arduino sender alle otte indgange samlet hvert 200 ms ved 115200 baud. Browseren læser USB-serieporten med Web Serial. Ved afbrudt forbindelse eller ophør af målinger viser tabellen **Ingen måling**.
+For local uploads, run the .NET app directly on the computer connected to the board. Connect one Portenta H7, click **Find port**, close Arduino IDE’s Serial Monitor and choose **Upload to COM…** after compilation. FishNShip releases its serial connection during upload. Click **Reconnect** to monitor the updated sketch.
 
-Skitsen sender også Portentas AI0–AI2 i volt med Portenta i 0–10 V-tilstand. En ældre skitse med kun DI0–DI7 virker stadig. Spændingen på AI skal ligge inden for 0–10 V. Klemmerne mærket +24 V OUT er sensorforsyning og må aldrig forbindes direkte til AI. På fischertechnik-lagerets stik er A1 og A2 sporsensorernes nederste og øverste signal på klemme 9 og 10. Kontrollér ledningsføringen for at finde ud af, hvilken sensor der ender på hver AI-kanal.
+The local server uses Arduino CLI and the Portenta USB bootloader. On Windows it normally finds the CLI bundled with Arduino IDE. Set `Arduino__CliPath`, `Arduino__CliConfig` or `Arduino__SketchPath` to override the CLI, configuration or sketch path. Install Arduino Mbed OS Portenta Boards and Arduino_PortentaMachineControl in the selected CLI configuration.
 
-## Redigér og upload fra siden
+## Hosted builds and uploads
 
-Start siden med `dotnet run --project web/LagerDemo.csproj` på den computer, hvor Portenta er tilsluttet. Åbn **Kode og upload**. Editorens C++-visning har linjenumre, Arduino-forslag, søg og erstat og fejlmarkering fra compileren. **Gem i projektet** skriver til `Demo/Demo.ino` (`Ctrl+S`). **Kompilér** kan prøve kladden, før I gemmer (`Ctrl+Enter`). Byggets output vises løbende på siden. **Hent .ino** gemmer en kopi via browseren, også på den hostede demo.
+Dokploy deploys `compose.dokploy.yml` from `main` and routes fishnship.mercantec.tech to container port 3000. The hosted app edits sketches, monitors USB through the browser and compiles for Portenta H7 (M7) using Arduino CLI inside Docker. The server runs one build at a time.
 
-Tilslut én Portenta H7 via USB. Klik **Find port**, luk Serial Monitor i Arduino IDE, og vælg **Upload til COM…** efter en vellykket kompilering. Siden frigiver sin egen Serial-forbindelse under upload. Klik **Forbind igen** eller **Vælg Arduino** bagefter for at se udskrifterne fra den nye skitse.
+To upload on Windows without running the local server, compile on FishNShip, click **Download firmware package**, extract the entire ZIP and run `Upload.cmd` on the computer connected to the board. Confirm the detected COM port. The package includes the compiled firmware. The upload computer needs Arduino CLI and the Mbed Portenta board package.
 
-Den lokale .NET-server bruger `arduino-cli` til at kompilere og bruge Portentas USB-bootloader. På Windows finder den normalt den CLI, der følger med Arduino IDE. `Arduino__CliPath`, `Arduino__CliConfig` og `Arduino__SketchPath` kan pege på en særskilt installation, konfiguration og skitse. Arduino Mbed OS Portenta Boards og Arduino_PortentaMachineControl skal være installeret i den valgte CLI-konfiguration.
+To upload directly from the hosted editor:
 
-Docker-varianten har editor og USB-overvågning i browseren. Kør .NET direkte på værtscomputeren for at gemme, kompilere og uploade.
+1. Start the local .NET app on the computer connected to the board.
+2. Open [FishNShip](https://fishnship.mercantec.tech/#firmware) in Chrome or Edge on that computer. Click **Find port** and authorize the connection in the local window. If pop-ups are blocked, choose **Connect with an upload code** and get the code from [the local tool](http://localhost:5080/#firmware).
+3. Click **Build and upload to COM…**. Allow local network access if prompted. The browser sends the sketch to the local tool, which compiles and uploads it using Arduino CLI. The connection is stored in the tab. The code remains valid until the local server restarts.
 
-Editoren leveres med appen. Hvis I ændrer dens CodeMirror-konfiguration, kør `npm ci --prefix web/editor` og `npm run build --prefix web/editor` for at gendanne bundlen og dens licensnoter.
+## Explore the 3D warehouse
 
-## Hosting på Dokploy
+Open the [3D model](https://fishnship.mercantec.tech/three). Drag to rotate, scroll to zoom and select a part to inspect it. The demo shows a storage and retrieval cycle. Click a signal to view its trace. Use **Full screen with signal monitor** to keep the model and controls together.
 
-Produktion bruger `compose.dokploy.yml` fra `main`. Dokploy sender trafik for `fishnship.mercantec.tech` til webservicen på containerport 3000. Den hostede side har kodeeditor, læser USB-signaler i browseren og kompilerer til Portenta H7 (M7) med Arduino CLI i Docker-containeren. Serveren håndterer én kompilering ad gangen.
+Under **USB live**, connect the Portenta to see raw digital and analog readings. In **Map inputs**, match each digital channel to its physical warehouse terminal and active level. With the standard wiring, the inner and outer light barriers go low when interrupted. An active mapped sensor glows green on the model.
 
-### Upload fra den hostede side
+## Rebuild the frontend
 
-**Uden localhost på Windows:** Kompilér på FishNShip, klik **Hent firmwarepakke**, og pak hele ZIP-filen ud. Kør `Upload.cmd` på computeren med Portenta, og bekræft den fundne COM-port. Upload kræver Arduino CLI og den installerede Mbed Portenta-boardpakke. Pakken indeholder den allerede kompilerede firmware, så Arduino-computeren slipper for at bygge skitsen igen.
+After changing the CodeMirror editor, run `npm ci --prefix web/editor` and `npm run build --prefix web/editor` to regenerate its bundle and license notices. For model or animation changes, run `npm ci --prefix web/three` and `npm run build --prefix web/three`. Both bundles ship with the app and Docker image.
 
-**Valgfri forbindelse via localhost:**
+## Manufacturer documentation
 
-1. Start den opdaterede .NET-app på Arduino-computeren.
-2. Åbn [FishNShip](https://fishnship.mercantec.tech/#firmware) i Chrome eller Edge på samme computer. Klik **Find port**, og godkend forbindelsen i det lokale vindue. Hvis pop op-vinduet er blokeret, kan I bruge **Forbind med uploadkode** og hente koden på [localhost:5080](http://localhost:5080/#firmware).
-3. Klik **Byg og upload til COM…**. Tillad lokal adgang, hvis browseren spørger. Browseren sender koden direkte til værktøjet på localhost, som bygger og uploader via Arduino CLI. Forbindelsen gemmes i fanen, og uploadkoden gælder indtil den lokale server genstartes.
-
-## Dokumentation
-
-På [3D-siden](https://fishnship.mercantec.tech/three) kan I dreje og zoome i højreollageret og følge en ind- og udlagring i demoen. Klik på et signal for at se dets signalspor. Under **USB live** kan I forbinde Portenta og se skitsens rå DI- og AI-kanaler. Der kræves kendskab til den lokale ledningsføring for at knytte de målinger til lagerets klemmer.
-
-Modellen og animationen ligger i `web/three`. Kør `npm ci --prefix web/three` og `npm run build --prefix web/three` efter ændringer. Three.js-bundlen leveres med siden, også i Docker.
-
-- [fischertechnik 536631, datablad og signalliste](https://fiproductmedia.azureedge.net/media/Certification%20Documents/Technical%20Datasheets/fischertechnik/TDB_536631-AUTOMATISIERTES_HOCHREGAL_24V.pdf)
-- [Arduino Portenta Machine Control, brugermanual](https://docs.arduino.cc/tutorials/portenta-machine-control/user-manual/)
+- [fischertechnik 536631 data sheet and terminal list](https://fiproductmedia.azureedge.net/media/Certification%20Documents/Technical%20Datasheets/fischertechnik/TDB_536631-AUTOMATISIERTES_HOCHREGAL_24V.pdf)
+- [Arduino Portenta Machine Control user manual](https://docs.arduino.cc/tutorials/portenta-machine-control/user-manual/)

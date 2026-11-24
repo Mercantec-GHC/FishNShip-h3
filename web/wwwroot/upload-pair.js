@@ -7,7 +7,7 @@ const status = document.querySelector('#approval-status');
 if (opener && /^[a-f0-9-]{36}$/i.test(requestId)) {
   approveButton.disabled = false;
 } else {
-  status.textContent = 'Åbn dette vindue med Find port på FishNShip.';
+  status.textContent = 'Open this window using Find port in FishNShip.';
 }
 
 approveButton.addEventListener('click', async () => {
@@ -18,12 +18,12 @@ approveButton.addEventListener('click', async () => {
       headers: { 'X-Lager-Editor': '1' },
     });
     const [keyResponse, portsResponse] = await Promise.all([request('bridge-key'), request('ports')]);
-    if (!keyResponse.ok) throw new Error('Start den lokale .NET-app på Arduino-computeren.');
-    if (!portsResponse.ok) throw new Error('Portlisten kunne ikke læses. Kontrollér den lokale Arduino CLI.');
+    if (!keyResponse.ok) throw new Error('Start the local .NET app on the computer connected to the Arduino.');
+    if (!portsResponse.ok) throw new Error('Could not read the port list. Check the local Arduino CLI.');
     const { key } = await keyResponse.json();
     const ports = await portsResponse.json();
     opener.postMessage({ type: 'fishnship-upload-approved', requestId, key, ports }, origin);
-    status.textContent = 'Godkendt. Gå tilbage til FishNShip.';
+    status.textContent = 'Authorized. Return to FishNShip.';
     window.close();
   } catch (error) {
     status.textContent = error.message;

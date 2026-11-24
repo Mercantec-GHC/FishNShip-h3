@@ -10,8 +10,8 @@ import { keymap } from '@codemirror/view';
 import { tags } from '@lezer/highlight';
 
 const arduinoCompletions = completeFromList([
-  { label: 'Serial', type: 'variable', detail: 'USB-serieport' },
-  { label: 'Wire', type: 'variable', detail: 'I²C' },
+  { label: 'Serial', type: 'variable', detail: 'USB serial port' },
+  { label: 'Wire', type: 'variable', detail: 'IÂ²C' },
   { label: 'MachineControl_DigitalInputs', type: 'variable', detail: 'Portenta' },
   { label: 'setup', type: 'function' },
   { label: 'loop', type: 'function' },
@@ -72,14 +72,6 @@ export function createArduinoEditor({ parent, doc, onChange, onCursor, onSave, o
       syntaxHighlighting(codeColors),
       indentUnit.of('    '),
       EditorState.tabSize.of(4),
-      EditorState.phrases.of({
-        Find: 'Søg', Replace: 'Erstat', next: 'Næste', previous: 'Forrige', all: 'Vælg alle',
-        'match case': 'Versalfølsom', regexp: 'Regulært udtryk', 'by word': 'Hele ord',
-        replace: 'Erstat', 'replace all': 'Erstat alle', close: 'Luk',
-        'Go to line': 'Gå til linje', go: 'Gå',
-        'Fold line': 'Fold linje', 'Unfold line': 'Fold linje ud',
-        Diagnostics: 'Diagnostik', 'No diagnostics': 'Ingen fejlmarkeringer',
-      }),
       keymap.of([indentWithTab]),
       lintGutter(),
       editorTheme,

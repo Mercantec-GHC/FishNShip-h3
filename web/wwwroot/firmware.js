@@ -63,8 +63,8 @@ function updateControls() {
   bridgeInput.disabled = busy || listing;
   const readyCode = editor && (enabled ? editor.value === compiledCode : editor.value.trim());
   uploadButton.disabled = !readyCode || !uploadAvailable || busy || listing || portSelect.options.length !== 2 || !portSelect.value;
-  const action = enabled ? 'Upload' : 'Byg og upload';
-  uploadButton.textContent = portSelect.value ? `${action} til ${portSelect.value}` : 'Upload firmware';
+  const action = enabled ? 'Upload' : 'Build and upload';
+  uploadButton.textContent = portSelect.value ? `${action} to ${portSelect.value}` : 'Upload firmware';
 }
 
 async function api(action, data, viaBridge = !enabled && (action === 'ports' || action === 'upload')) {
@@ -80,31 +80,31 @@ async function api(action, data, viaBridge = !enabled && (action === 'ports' || 
     });
   } catch (error) {
     if (!viaBridge) throw error;
-    throw new Error('Kunne ikke nå localhost:5080. Start det lokale værktøj, og tillad lokal adgang i browseren.');
+    throw new Error('Could not reach localhost:5080. Start the local tool and allow local network access in your browser.');
   }
   if (response.ok) return response;
   if (viaBridge && response.status === 403) {
     rememberBridge('');
-    bridgeStatus.textContent = 'Uploadkoden er afvist. Hent en ny kode på localhost.';
+    bridgeStatus.textContent = 'Upload code rejected. Get a new code from localhost.';
     throw new Error(bridgeStatus.textContent);
   }
   const error = await response.json().catch(() => ({}));
-  throw new Error(error.message || error.detail || `Siden kunne ikke fuldføre handlingen (${response.status}).`);
+  throw new Error(error.message || error.detail || `The operation failed (${response.status}).`);
 }
 
 function showPorts(ports) {
   const previous = portSelect.value;
-  portSelect.replaceChildren(new Option('Vælg Portenta', ''));
+  portSelect.replaceChildren(new Option('Select Portenta', ''));
   for (const port of ports) portSelect.add(new Option(`Portenta H7 · ${port}`, port));
   if (ports.length === 1) portSelect.value = ports[0];
   else if (ports.includes(previous)) portSelect.value = previous;
-  portStatus.textContent = ports.length === 1 ? `Portenta er valgt på ${ports[0]}.` : ports.length > 1 ? 'Lad kun den Portenta, I vil flashe, være tilsluttet.' : 'Ingen Portenta fundet. Tilslut USB, og klik Find port.';
+  portStatus.textContent = ports.length === 1 ? `Portenta selected on ${ports[0]}.` : ports.length > 1 ? 'Keep only the Portenta you want to flash connected.' : 'No Portenta found. Connect it via USB and click Find port.';
 }
 
 async function refreshPorts() {
   listing = true;
   updateControls();
-  portStatus.textContent = 'Leder efter Portenta via USB…';
+  portStatus.textContent = 'Looking for a Portenta via USB…';
   try {
     const ports = await (await api('ports')).json();
     showPorts(ports);
@@ -121,10 +121,10 @@ async function refreshPorts() {
 
 async function connectBridge(key) {
   bridgeKey = key;
-  bridgeStatus.textContent = 'Forbinder til det lokale værktøj…';
+  bridgeStatus.textContent = 'Connecting to the local tool…';
   if (await refreshPorts()) {
     rememberBridge(key);
-    bridgeStatus.textContent = 'Lokal upload er forbundet.';
+    bridgeStatus.textContent = 'Local uploader connected.';
     bridgeInput.value = '';
   } else {
     rememberBridge('');
@@ -142,8 +142,8 @@ function findPorts() {
   pairRequestId = crypto.randomUUID();
   pairWindow = window.open(`${localhost}/upload-pair.html#${pairRequestId}`, 'fishnship-local-upload', 'popup,width=620,height=440');
   portStatus.textContent = pairWindow
-    ? 'Godkend forbindelsen i det lokale vindue.'
-    : 'Tillad pop op-vinduer, eller vælg Forbind med uploadkode.';
+    ? 'Authorize the connection in the local window.'
+    : 'Allow pop-ups or select Connect with an upload code.';
 }
 
 window.addEventListener('message', event => {
@@ -156,7 +156,7 @@ window.addEventListener('message', event => {
   pairRequestId = undefined;
   rememberBridge(event.data.key);
   showPorts(event.data.ports);
-  bridgeStatus.textContent = 'Lokal upload er forbundet.';
+  bridgeStatus.textContent = 'Local uploader connected.';
   updateControls();
 });
 
@@ -176,13 +176,13 @@ async function revealBridgeKey() {
 async function loadSketch() {
   try {
     const response = await fetch('/api/firmware/sketch', { cache: 'no-store' });
-    if (!response.ok) throw new Error('Demo.ino kunne ikke læses.');
+    if (!response.ok) throw new Error('Could not read Demo.ino.');
     const sketch = await response.json();
     editor = createArduinoEditor({
       parent: editorHost,
       doc: sketch.code,
       onChange: editorChanged,
-      onCursor: (line, column) => { cursorStatus.textContent = `Linje ${line}, kolonne ${column}`; },
+      onCursor: (line, column) => { cursorStatus.textContent = `Line ${line}, column ${column}`; },
       onSave: () => {
         if (!saveButton.disabled) void saveSketch();
         if (!enabled && !downloadButton.disabled) downloadSketch();
@@ -193,7 +193,7 @@ async function loadSketch() {
     version = sketch.version;
     enabled = sketch.enabled;
     compileEnabled = sketch.compileEnabled ?? enabled;
-    sketchStatus.textContent = enabled ? 'Demo.ino er åben' : 'Lokal kladde';
+    sketchStatus.textContent = enabled ? 'Demo.ino is open' : 'Local draft';
     document.querySelector('#local-bridge').hidden = !enabled;
     document.querySelector('#hosted-bridge').hidden = enabled || location.protocol !== 'https:';
     document.querySelector('#firmware-package').hidden = enabled || !compileEnabled;
@@ -203,11 +203,11 @@ async function loadSketch() {
     }
     if (enabled) void refreshPorts();
     else {
-      document.querySelector('#upload-port-label').textContent = 'Port til upload via localhost (valgfrit)';
-      portStatus.textContent = 'Find port bruger det lokale værktøj.';
+      document.querySelector('#upload-port-label').textContent = 'Upload port via localhost (optional)';
+      portStatus.textContent = 'Find port uses the local tool.';
       firmwareStatus.textContent = compileEnabled
-        ? 'Kompilér koden for at hente firmwarepakken.'
-        : 'Du kan hente kladden som .ino. Kompilering og upload kører på localhost.';
+        ? 'Compile the sketch to download the firmware package.'
+        : 'Download your draft as an .ino file. Compilation and upload run on localhost.';
     }
   } catch (error) {
     sketchStatus.textContent = error.message;
@@ -235,7 +235,7 @@ async function saveSketch() {
     const { version: newVersion } = await (await api('sketch', { code: editor.value, version })).json();
     savedCode = editor.value;
     version = newVersion;
-    sketchStatus.textContent = 'Gemt i Demo.ino';
+    sketchStatus.textContent = 'Saved to Demo.ino';
   } catch (error) {
     sketchStatus.textContent = error.message;
   } finally {
@@ -272,7 +272,7 @@ async function readBuildStream(response) {
   } finally {
     reader.releaseLock();
   }
-  if (!result) throw new Error('Forbindelsen til den lokale server blev afbrudt.');
+  if (!result) throw new Error('Lost connection to the local server.');
   return result;
 }
 
@@ -287,7 +287,7 @@ async function runFirmware(action) {
     editor.showDiagnostics([]);
     showingDiagnostics = false;
   }
-  firmwareStatus.textContent = uploading ? 'Frigiver USB-porten…' : 'Kompilering i gang…';
+  firmwareStatus.textContent = uploading ? 'Releasing USB port…' : 'Compiling…';
   firmwareStatus.removeAttribute('data-error');
   buildLines.length = 0;
   buildLog.textContent = '';
@@ -295,14 +295,14 @@ async function runFirmware(action) {
   try {
     if (uploading) await prepareUpload();
     if (uploading && !enabled) {
-      firmwareStatus.textContent = 'Bygger firmware på Arduino-computeren…';
+      firmwareStatus.textContent = 'Building firmware on the computer connected to the Arduino…';
       const localBuild = await readBuildStream(await api('compile', { code }, true));
       if (!localBuild.success) {
         editor.showDiagnostics(buildLines);
         showingDiagnostics = true;
         throw new Error(localBuild.message);
       }
-      firmwareStatus.textContent = `Uploader til ${port}…`;
+      firmwareStatus.textContent = `Uploading to ${port}…`;
     }
     const result = await readBuildStream(await api(action, { code, port }));
     if (!uploading) {
@@ -327,13 +327,13 @@ async function runFirmware(action) {
 }
 
 function editorChanged() {
-  sketchStatus.textContent = editor.value === savedCode ? 'Demo.ino er åben' : 'Ændringer ikke gemt';
+  sketchStatus.textContent = editor.value === savedCode ? 'Demo.ino is open' : 'Unsaved changes';
   if (showingDiagnostics) {
     showingDiagnostics = false;
     queueMicrotask(() => editor.showDiagnostics([]));
   }
   if (enabled && compiledCode) {
-    firmwareStatus.textContent = editor.value === compiledCode ? 'Kompileret og klar til upload.' : 'Kompilér ændringerne før upload.';
+    firmwareStatus.textContent = editor.value === compiledCode ? 'Compiled and ready to upload.' : 'Compile your changes before uploading.';
     firmwareStatus.removeAttribute('data-error');
   }
   updateControls();

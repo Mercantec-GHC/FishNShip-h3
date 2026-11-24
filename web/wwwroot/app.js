@@ -11,7 +11,7 @@ const inputCount = document.querySelector('#input-count');
 const analogRows = Array.from(document.querySelectorAll('#analog-inputs tr'), row => ({
   voltage: row.cells[1], raw: row.cells[2], status: row.cells[3], previous: null,
 }));
-const voltageFormat = new Intl.NumberFormat('da-DK', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+const voltageFormat = new Intl.NumberFormat('en-GB', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
 const lastChange = document.querySelector('#last-change');
 const serialLog = document.querySelector('#serial-log');
 const serialLines = [];
@@ -21,14 +21,14 @@ const inputRows = Array.from(document.querySelectorAll('#input-rows tr')).map(ro
   highlightTimer: null,
 }));
 
-const timeFormat = new Intl.DateTimeFormat('da-DK', { timeStyle: 'medium' });
+const timeFormat = new Intl.DateTimeFormat('en-GB', { timeStyle: 'medium' });
 let lastLevels = null;
 let uploading = false;
 let previousState;
 const monitor = createSignalMonitor({ onLines: appendSerialLines });
 
 function levelLabel(value) {
-  return value === 1 ? 'Høj' : 'Lav';
+  return value === 1 ? 'High' : 'Low';
 }
 
 function addEvent(message) {
@@ -62,7 +62,7 @@ function showInputs(levels, voltages = [], counts = []) {
     const hasReading = Number.isFinite(value);
     const hasRaw = Number.isInteger(count) && count >= 0 && count <= 65535;
     const saturated = count === 65535 || (!hasRaw && hasReading && value >= 10.692);
-    const status = !hasReading ? 'Ingen måling' : saturated ? 'Mættet' : value > 10 ? 'Over 10 V' : 'Inden for 0–10 V';
+    const status = !hasReading ? 'No reading' : saturated ? 'Saturated' : value > 10 ? 'Over 10 V' : 'Within 0–10 V';
     row.voltage.textContent = hasReading && !saturated && value <= 10 ? voltageFormat.format(value) + ' V' : '–';
     row.raw.textContent = hasRaw ? String(count) : '–';
     if (row.status.textContent !== status) row.status.textContent = status;
@@ -74,7 +74,7 @@ function showInputs(levels, voltages = [], counts = []) {
   inputRows.forEach((channelRow, channel) => {
     const { row, level } = channelRow;
     const value = levels?.[channel];
-    const text = value === undefined ? 'Ingen måling' : `${levelLabel(value)} (${value})`;
+    const text = value === undefined ? 'No reading' : `${levelLabel(value)} (${value})`;
     if (level.textContent !== text) {
       level.textContent = text;
     }
@@ -90,10 +90,10 @@ function showInputs(levels, voltages = [], counts = []) {
     }
   });
   lastLevels = levels;
-  inputCount.textContent = levels ? `${levels.reduce((sum, value) => sum + value, 0)} af ${levels.length} høje` : 'Ingen aflæsning';
+  inputCount.textContent = levels ? `${levels.reduce((sum, value) => sum + value, 0)} of ${levels.length} high` : 'No readings';
   if (changes.length) {
     const message = changes.join(' / ');
-    lastChange.textContent = `Seneste skift: ${message}`;
+    lastChange.textContent = `Latest transition: ${message}`;
     addEvent(message);
   }
 }
@@ -121,21 +121,21 @@ function renderMonitor(state) {
     const frame = state.frame;
     showInputs(frame?.digital ?? null, frame?.analog, frame?.adc);
     if (frame) {
-      inputSource.textContent = 'Live fra Arduino via USB';
+      inputSource.textContent = 'Live from Arduino via USB';
     } else if (state.phase === 'stale') {
-      inputSource.textContent = 'Ingen nye målinger fra Arduino.';
+      inputSource.textContent = 'No new readings from Arduino.';
     } else {
-      inputSource.textContent = state.connected ? 'Venter på målinger fra Arduino…' : 'Tilslut Arduino via USB for at se signaler.';
-      lastChange.textContent = 'Seneste skift vises her.';
+      inputSource.textContent = state.connected ? 'Waiting for Arduino readings…' : 'Connect the Arduino via USB to see signals.';
+      lastChange.textContent = 'The latest transition will appear here.';
     }
   }
-  if (state.connected && !previousState?.connected) addEvent('USB-forbindelse åbnet.');
-  if (!state.connected && previousState?.connected) addEvent('Arduino afbrudt.');
+  if (state.connected && !previousState?.connected) addEvent('USB connection opened.');
+  if (!state.connected && previousState?.connected) addEvent('Arduino disconnected.');
   previousState = state;
 }
 
 export async function prepareUpload() {
-  if (monitor.state.phase === 'opening') throw new Error('Luk eller fuldfør valg af USB-porten før upload.');
+  if (monitor.state.phase === 'opening') throw new Error('Complete or cancel USB port selection before uploading.');
   uploading = true;
   updateControls();
   await monitor.disconnect();
