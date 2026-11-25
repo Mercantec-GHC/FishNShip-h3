@@ -42,7 +42,7 @@ Under **USB live**, connect the Portenta to see raw digital and analog readings.
 
 ### Control all four motors over USB
 
-Upload the included `Demo/Demo.ino` to the Portenta and connect from **USB live** on the 3D page. Choose a motor in the side panel or select it on the model. Each direction button requests a one-second jog. **Stop all** ends the current jog early. Digital and analog input readings continue during motion.
+Upload the included `Demo/Demo.ino` to the Portenta. On the home page, click **Select Arduino** and choose a motor in **Motor control**. The signal monitor, serial log and input tables share that USB connection. On the 3D page, open **USB live** and choose a motor in the side panel or select it on the model. Each direction button requests a one-second jog. **Stop all** ends the current jog early. Digital and analog input readings continue during motion.
 
 | Motor | First direction | Second direction | Portenta digital outputs |
 | --- | --- | --- | --- |

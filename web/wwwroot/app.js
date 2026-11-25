@@ -1,3 +1,4 @@
+import { mountSignalPanel } from './three/panel.js';
 import { createSignalMonitor } from './signal-monitor.js';
 const chooseButtons = document.querySelectorAll('[data-usb="choose"]');
 const reconnectButtons = document.querySelectorAll('[data-usb="reconnect"]');
@@ -26,6 +27,8 @@ let lastLevels = null;
 let uploading = false;
 let previousState;
 const monitor = createSignalMonitor({ onLines: appendSerialLines });
+
+mountSignalPanel({ monitor, usbOnly: true });
 
 function levelLabel(value) {
   return value === 1 ? 'High' : 'Low';
@@ -109,6 +112,7 @@ function appendSerialLines(lines) {
 }
 
 function updateControls(state = monitor.state) {
+  document.querySelector('.home-monitor').inert = uploading;
   for (const button of chooseButtons) button.disabled = uploading || !state.canChoose;
   for (const button of reconnectButtons) button.disabled = uploading || !state.canReconnect;
   for (const button of disconnectButtons) button.disabled = uploading || !state.canDisconnect;

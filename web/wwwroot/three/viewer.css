@@ -166,53 +166,6 @@ h1 span { color: #697a87; font-weight: 420; }
 .timeline input { min-width: 28px; width: 100%; accent-color: #324f69; cursor: pointer; height: 5px; }
 #clock { font: 11px var(--mono); font-variant-numeric: tabular-nums; }
 .hardware-caption small { margin-left: auto; max-width: 320px; font-size: 12px; color: var(--muted); }
-.monitor { background: var(--console); color: var(--console-text); display: flex; flex-direction: column; height: clamp(506px, calc(65vh + 80px), 915px); }
-.monitor-head { display: flex; align-items: center; gap: 10px; padding: 19px 19px 12px; }
-.monitor-head .icon { color: var(--mint); width: 23px; height: 23px; stroke-width: 1.9; }
-.monitor-head h2 { margin: 0; font-weight: 630; font-size: 20px; letter-spacing: -.035em; }
-.sources { display: flex; margin: 0 18px 8px; border-radius: 7px; padding: 3px; border: 1px solid var(--console-edge); background: #111e2a; }
-.sources button { border: 0; background: transparent; display: flex; gap: 7px; align-items: center; justify-content: center; flex: 1; padding: 6px; border-radius: 4px; color: var(--console-muted); font-size: 12px; }
-.sources .icon { width: 14px; height: 14px; }
-.sources button[aria-pressed="true"] { background: #3b4c5d; color: #fff; font-weight: 620; }
-.monitor-body { min-height: 0; display: flex; flex: 1; flex-direction: column; padding: 0 18px; }
-.tabs { display: flex; border-bottom: 1px solid var(--console-edge); gap: 16px; flex: none; }
-.tabs button { padding: 8px 1px; color: var(--console-muted); border: 0; border-bottom: 2px solid transparent; background: none; font-size: 12px; }
-.tabs button[aria-pressed="true"] { border-color: var(--mint); color: var(--console-text); }
-#channel-list { min-height: 100px; flex: 1; overflow-y: auto; scrollbar-color: #556977 var(--console); scrollbar-width: thin; padding: 3px 2px 4px 0; }
-.channel-row { width: 100%; display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 5px; align-items: center; text-align: left; background: transparent; border: 0; border-bottom: 1px solid #30404e; color: var(--console-text); padding: 7px 5px; min-height: 32px; }
-.channel-row:hover { background: #223543; }
-.channel-row[aria-pressed="true"] { background: #243947; box-shadow: inset 2px 0 #70dfb4; }
-.channel-row:focus-visible { outline-offset: -2px; }
-.channel-code { font: 600 11px var(--mono); color: #bed0df; text-align: center; }
-.channel-name { font-size: 12px; line-height: 1.3; }
-.channel-value { display: flex; gap: 7px; align-items: center; justify-content: end; font: 11px var(--mono); font-variant-numeric: tabular-nums; color: var(--console-muted); }
-.channel-led { width: 7px; height: 7px; border-radius: 50%; background: #657682; }
-.channel-row[data-high]:not([data-linked]) .channel-led, .channel-row[data-sensor-active] .channel-led, .lamp[data-mode="demo"], .lamp[data-mode="live"] { background: var(--mint); }
-.channel-row[data-high]:not([data-linked]) .channel-reading, .channel-row[data-sensor-active] .channel-reading { color: var(--mint); }
-.channel-row[data-unknown] .channel-led { background: transparent; border: 1px solid #768590; }
-.channel-row .channel-active { color: #a6f6ce; border: 1px solid #457965; border-radius: 3px; padding: 1px 4px; font: 650 10px/1.3 var(--font); }
-.scope { border-top: 1px solid var(--console-edge); padding: 8px 0 9px; flex: none; }
-.scope-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 11px; color: var(--console-muted); margin: 0 1px 5px; }
-.scope-heading b { color: var(--mint); font: 11px var(--mono); }
-#scope-plot { display: block; background: #13202c; border-radius: 4px; width: 100%; height: 40px; }
-.scope-grid { fill: none; stroke: var(--graph-grid); stroke-width: .65; }
-#trace { stroke: var(--mint); fill: none; stroke-width: 1.7; vector-effect: non-scaling-stroke; }
-.monitor-footer { border-top: 1px solid var(--console-edge); display: flex; align-items: center; gap: 7px; padding: 8px 18px; font-size: 11px; color: var(--console-muted); }
-.lamp { width: 7px; height: 7px; border-radius: 50%; background: #82929e; }
-#usb-setup p { font-size: 12px; margin: 7px 0; color: var(--console-muted); }
-.usb-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
-.usb-actions button { border: 1px solid #506575; background: #354b5a; color: #fff; border-radius: 4px; padding: 4px 7px; font-size: 12px; }
-#wiring-tools { flex: none; min-width: 0; padding: 5px 0; border-bottom: 1px solid var(--console-edge); }
-#toggle-wiring { padding: 3px 7px; border: 1px solid #4f6677; border-radius: 4px; background: #243a49; color: var(--console-text); font: 550 12px/1.5 var(--font); }
-#toggle-wiring[aria-expanded="true"], #toggle-wiring:hover { background: #355061; }
-#wiring-editor { margin-top: 6px; padding: 6px 7px 7px; max-height: clamp(135px, 26vh, 235px); overflow-y: auto; border-radius: 5px; background: #15222d; scrollbar-width: thin; scrollbar-color: #5b7080 #15222d; }
-#wiring-editor p { margin: 0 0 7px; color: #bfd0db; font-size: 11px; line-height: 1.4; }
-#wiring-fields { display: grid; gap: 5px; }
-#wiring-fields .wiring-field { display: grid; grid-template-columns: 25px minmax(0, 1fr) 81px; gap: 3px; align-items: center; }
-#wiring-fields .wiring-field span { color: #cedbe4; font: 600 11px var(--mono); }
-#wiring-fields select { min-width: 0; width: 100%; min-height: 27px; padding: 3px 2px; border: 1px solid #566c7c; border-radius: 4px; background: #243746; color: var(--console-text); font: 12px var(--font); color-scheme: dark; }
-#wiring-editor #wiring-status { margin: 7px 0 0; color: var(--mint); }
-#wiring-status:empty { display: none; }
 @media (min-width: 741px) {
   .viewer .stage { min-height: 300px; }
   .workspace:not(.is-expanded) .monitor:has(#wiring-editor:not([hidden])) { min-height: calc(490px + clamp(135px, 26vh, 235px)); }

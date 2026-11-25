@@ -7,6 +7,7 @@
   <meta name="description" content="Explore the fischertechnik high-bay warehouse in 3D and monitor Portenta signals over USB.">
   <title>High-bay warehouse 24V · FishNShip</title>
   <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/monitor.css">
   <link rel="stylesheet" href="/three/viewer.css">
   <script type="module" src="/three/viewer.js"></script>
 </head>
@@ -58,21 +59,6 @@
         </section>
       </section>
       <aside class="monitor" aria-labelledby="monitor-title">
-        <div class="monitor-head"><svg class="icon" aria-hidden="true"><use href="#i-wave"/></svg><h2 id="monitor-title">Signal monitor</h2></div>
-        <div class="sources" role="group" aria-label="Signal source"><button data-source="demo" aria-pressed="true" type="button"><svg class="icon" aria-hidden="true"><use href="#i-play"/></svg>Demo</button><button data-source="usb" aria-pressed="false" type="button"><svg class="icon" aria-hidden="true"><use href="#i-usb"/></svg>USB live</button></div>
-        <div class="monitor-body">
-          <div id="usb-setup" hidden><p id="usb-message" role="status"></p><div class="usb-actions"><button id="connect" type="button">Select Arduino</button><button id="reconnect" type="button">Reconnect</button><button id="disconnect" type="button">Disconnect</button></div>
-            <section aria-label="Motor controls">
-              <label>Motor <select id="motor-picker"><option value="M1">M1 · Conveyor</option><option value="M2">M2 · Horizontal drive</option><option value="M3">M3 · Vertical lift</option><option value="M4">M4 · Telescopic fork</option></select></label>
-              <p id="motor-state" role="status"></p>
-              <div class="usb-actions" id="motor-actions"></div>
-            </section></div>
-          <div class="tabs" role="group" aria-label="Signal group"><button data-tab="inputs" type="button" aria-pressed="true">Inputs</button><button data-tab="outputs" type="button" aria-pressed="false">Outputs</button></div>
-          <div id="wiring-tools" hidden><button id="toggle-wiring" type="button" aria-expanded="false" aria-controls="wiring-editor">Map inputs</button><div id="wiring-editor" hidden><p>Choose the warehouse terminal and the raw level that indicates activation. On the standard warehouse, I2 and I3 go low when the beam is interrupted. Settings are saved in this browser.</p><div id="wiring-fields"></div><p id="wiring-status" role="status"></p></div></div>
-          <div id="channel-list" aria-label="Signal values"></div>
-          <div class="scope"><div class="scope-heading"><span>Signal trace</span><b id="scope-label"></b></div><svg id="scope-plot" viewBox="0 0 280 49" preserveAspectRatio="none" role="img" aria-label="History of the selected signal"><path class="scope-grid" d="M0 9h280M0 25h280M0 41h280M40 0v49m50-49v49m50-49v49m50-49v49m50-49v49"/><path id="trace"/></svg></div>
-        </div>
-        <div class="monitor-footer"><span id="status-lamp" class="lamp"></span><span id="monitor-status">Simulated signals</span></div>
       </aside>
     </div>
     <noscript>Enable JavaScript to view the model and signals.</noscript>

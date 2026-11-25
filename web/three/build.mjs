@@ -5,8 +5,9 @@ import { build } from 'esbuild';
 const output = new URL('../wwwroot/three/', import.meta.url);
 await build({
   absWorkingDir: fileURLToPath(new URL('.', import.meta.url)),
-  entryPoints: ['viewer.js'],
-  outfile: fileURLToPath(new URL('viewer.js', output)),
+  entryPoints: ['viewer.js', 'panel.js'],
+  loader: { '.html': 'text' },
+  outdir: fileURLToPath(output),
   bundle: true,
   external: ['/signal-monitor.js'],
   format: 'esm',

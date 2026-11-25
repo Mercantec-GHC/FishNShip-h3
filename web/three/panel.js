@@ -1,3 +1,4 @@
+import markup from './panel.html';
 import { createSignalMonitor } from '/signal-monitor.js';
 import { sampleSimulation, signals } from './simulation.js';
 
@@ -104,7 +105,8 @@ function usbTrace(history, channel, now) {
   return path;
 }
 
-export function mountSignalPanel({ onSourceChange, onSelectSignal, onDigitalState } = {}) {
+export function mountSignalPanel({ onSourceChange, onSelectSignal, onDigitalState, monitor = createSignalMonitor(), usbOnly = false } = {}) {
+  document.querySelector('.monitor').innerHTML = markup;
   const find = id => document.getElementById(id);
   const sources = [...document.querySelectorAll('[data-source]')];
   const tabs = [...document.querySelectorAll('[data-tab]')];
@@ -114,20 +116,25 @@ export function mountSignalPanel({ onSourceChange, onSelectSignal, onDigitalStat
   const scopeLabel = find('scope-label');
   const usbMessage = find('usb-message');
   const statusLamp = find('status-lamp');
-  const status = find('monitor-status');
+  const status = find('signal-panel-status');
   const connect = find('connect');
   const reconnect = find('reconnect');
   const disconnect = find('disconnect');
   const motorPicker = find('motor-picker');
   const motorButtons = [];
-  for (const group of [find('motor-actions'), find('part-motor')]) {
+  for (const group of [find('motor-actions'), find('part-motor')].filter(Boolean)) {
     for (const output of [...demoGroups.outputs, { id: 'STOP', label: 'Stop all' }]) {
       const button = document.createElement('button');
       button.type = 'button';
       button.disabled = true;
       button.dataset.command = output.id;
       if (output.motor) button.dataset.motor = output.motor;
-      button.textContent = output.motor ? output.id + ' · ' + output.label + ' 1 s' : output.label;
+      if (output.motor) {
+        const code = document.createElement('b');
+        code.textContent = output.id;
+        button.append(code, document.createTextNode(output.label.replace(/^Conveyor /, '')));
+        button.setAttribute('aria-label', output.id + ' · ' + output.label + ' for one second');
+      } else button.textContent = output.label;
       button.addEventListener('click', async () => {
         try { await monitor.sendMotor(output.id); }
         catch { setText(usbMessage, 'Could not send the motor command. Check the USB connection.'); }
@@ -142,7 +149,7 @@ export function mountSignalPanel({ onSourceChange, onSelectSignal, onDigitalStat
   const wiringEditor = find('wiring-editor');
   const wiringStatus = find('wiring-status');
   const wiringSelects = new Map();
-  const monitor = createSignalMonitor();
+
   const selected = { demo: { inputs: 'I1', outputs: 'Q1' }, usb: { inputs: 'DI0', outputs: 'AI0' } };
   const activeTab = { demo: 'inputs', usb: 'inputs' };
   const rows = new Map();
@@ -403,8 +410,8 @@ export function mountSignalPanel({ onSourceChange, onSelectSignal, onDigitalStat
     source = next;
     const live = source === 'usb';
     find('usb-setup').hidden = !live;
-    find('transport').hidden = live;
-    find('hardware-caption').hidden = !live;
+    if (!usbOnly) find('transport').hidden = live;
+    if (!usbOnly) find('hardware-caption').hidden = !live;
     for (const button of sources) button.setAttribute('aria-pressed', String(button.dataset.source === source));
     clearInterval(chartTimer);
     if (live) chartTimer = setInterval(renderTrace, 125);
@@ -424,7 +431,10 @@ export function mountSignalPanel({ onSourceChange, onSelectSignal, onDigitalStat
   connect.addEventListener('click', () => { void monitor.connect(); });
   reconnect.addEventListener('click', () => { void monitor.reconnect(); });
   disconnect.addEventListener('click', () => { void monitor.disconnect().catch(error => setText(usbMessage, error.message)); });
-  rebuildRows();
+  if (usbOnly) {
+    document.querySelector('.sources').hidden = true;
+    changeSource('usb');
+  } else rebuildRows();
   monitor.subscribe(state => {
     usb = state;
     if (state.phase === 'opening' || state.phase === 'waiting') history = [];
