@@ -120,7 +120,6 @@ export function mountSignalPanel({ onSourceChange, onSelectSignal, onDigitalStat
   const connect = find('connect');
   const reconnect = find('reconnect');
   const disconnect = find('disconnect');
-  const motorPicker = find('motor-picker');
   const motorButtons = [];
   for (const group of [find('motor-actions'), find('part-motor')].filter(Boolean)) {
     for (const output of [...demoGroups.outputs, { id: 'STOP', label: 'Stop all' }]) {
@@ -139,11 +138,11 @@ export function mountSignalPanel({ onSourceChange, onSelectSignal, onDigitalStat
         try { await monitor.sendMotor(output.id); }
         catch { setText(usbMessage, 'Could not send the motor command. Check the USB connection.'); }
       });
-      group.append(button);
+      const motorGroup = output.motor && group.querySelector('[data-motor-group="' + output.motor + '"]');
+      (motorGroup || group).append(button);
       motorButtons.push(button);
     }
   }
-  motorPicker.addEventListener('change', renderStatus);
   const wiringTools = find('wiring-tools');
   const toggleWiring = find('toggle-wiring');
   const wiringEditor = find('wiring-editor');
@@ -391,11 +390,10 @@ export function mountSignalPanel({ onSourceChange, onSelectSignal, onDigitalStat
     setText(status, usb.phase === 'live' ? 'Portenta readings' : 'No current readings');
     const outputs = usb.frame?.outputs;
     const active = demoGroups.outputs[outputs?.indexOf(1)];
-    const upgrade = outputs?.length === 2 && motorPicker.value !== 'M1';
+    const upgrade = outputs?.length === 2;
     const description = active ? active.id + ' · ' + active.label : outputs ? 'Stopped' : 'Waiting for USB output readings.';
     setText(find('motor-state'), (upgrade || (usb.frame && !outputs)) ? description + ' Upload the all-motor sketch to enable Q1–Q8.' : description);
     for (const button of motorButtons) {
-      if (button.parentElement.id === 'motor-actions') button.hidden = Boolean(button.dataset.motor && button.dataset.motor !== motorPicker.value);
       const command = button.dataset.command;
       button.disabled = !outputs || (command !== 'STOP' && (Boolean(active) || Number(command.slice(1)) > outputs.length));
     }

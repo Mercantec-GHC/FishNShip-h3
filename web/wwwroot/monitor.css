@@ -60,10 +60,14 @@
 .monitor-body { overflow-y: auto; scrollbar-width: thin; }
 .motor-console { padding: 12px; margin: 10px 0; border: 1px solid #425766; border-radius: 9px; background: #203240; }
 .motor-heading { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 7px; }
-.motor-heading label { font-size: 13px; font-weight: 650; }
+.motor-heading strong { font-size: 13px; font-weight: 650; }
 .motor-heading span { color: #a9c0cc; font: 11px var(--mono); }
-#motor-picker { width: 100%; min-height: 36px; border: 1px solid #597180; border-radius: 5px; padding: 5px 8px; color: #fff; background: #152633; color-scheme: dark; font: 600 13px var(--font); }
-#motor-actions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 6px; }
+#motor-actions { display: grid; gap: 8px; }
+#motor-actions fieldset { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 5px; min-width: 0; padding: 0; margin: 0; border: 0; }
+#motor-actions legend { margin-bottom: 4px; padding: 0; color: #cadddf; font: 600 12px var(--font); }
+@media (min-width: 1000px) {
+  .home-monitor #motor-actions { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
 :is(#motor-actions,#part-motor) button { min-height: 34px; font: 600 12px var(--font); }
 #motor-actions button { text-align: left; padding: 6px 8px; }
 [data-command] b { font: 600 11px var(--mono); margin-right: 6px; color: #abefda; }
