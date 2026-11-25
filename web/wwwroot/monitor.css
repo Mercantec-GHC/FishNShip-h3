@@ -41,8 +41,8 @@
 .monitor-footer { border-top: 1px solid var(--console-edge); display: flex; align-items: center; gap: 7px; padding: 8px 18px; font-size: 11px; color: var(--console-muted); }
 .lamp { width: 7px; height: 7px; border-radius: 50%; background: #82929e; }
 #usb-setup p { font-size: 12px; margin: 7px 0; color: var(--console-muted); }
-:is(.monitor, #part-info) .usb-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
-:is(.monitor, #part-info) .usb-actions button { border: 1px solid #506575; background: #354b5a; color: #fff; border-radius: 4px; padding: 4px 7px; font-size: 12px; }
+:where(.monitor, #part-info) .usb-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
+:where(.monitor, #part-info) .usb-actions button { border: 1px solid #506575; background: #354b5a; color: #fff; border-radius: 4px; padding: 4px 7px; font-size: 12px; }
 #wiring-tools { flex: none; min-width: 0; padding: 5px 0; border-bottom: 1px solid var(--console-edge); }
 #toggle-wiring { padding: 3px 7px; border: 1px solid #4f6677; border-radius: 4px; background: #243a49; color: var(--console-text); font: 550 12px/1.5 var(--font); }
 #toggle-wiring[aria-expanded="true"], #toggle-wiring:hover { background: #355061; }

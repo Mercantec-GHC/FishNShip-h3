@@ -132,7 +132,7 @@ export function mountSignalPanel({ onSourceChange, onSelectSignal, onDigitalStat
       if (output.motor) {
         const code = document.createElement('b');
         code.textContent = output.id;
-        button.append(code, document.createTextNode(output.label.replace(/^Conveyor /, '')));
+        button.append(code, document.createTextNode(output.label.replace(/^Conveyor f/, 'F').replace(/^Conveyor r/, 'R')));
         button.setAttribute('aria-label', output.id + ' · ' + output.label + ' for one second');
       } else button.textContent = output.label;
       button.addEventListener('click', async () => {
